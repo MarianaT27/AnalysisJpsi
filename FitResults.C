@@ -101,7 +101,7 @@ int FitResults(string pdfname="Full_Invariant", double EP=-0.030 , double Q2cut=
   
     //---------------SPRING 2019----------
 
-    TFile *file1 = new TFile("/lustre19/expphy/volatile/clas12/mtenorio/AnalysisJpsi/Root/InvariantMassS19.root","READ");
+    TFile *file1 = new TFile("/lustre19/expphy/volatile/clas12/mtenorio/Root/InvariantMassS19.root","READ");
     TTree *results1 = (TTree*)file1->Get("results");
     Double_t invariantMass,t,Q2, EPcut, MM, Egamma;
 
@@ -131,7 +131,7 @@ int FitResults(string pdfname="Full_Invariant", double EP=-0.030 , double Q2cut=
     }
 
     //---------------FALL 2018 INBENDING----------
-    TFile *file2 = new TFile("/lustre19/expphy/volatile/clas12/mtenorio/AnalysisJpsi/Root/InvariantMassF18in.root","READ");
+    TFile *file2 = new TFile("/lustre19/expphy/volatile/clas12/mtenorio/Root/InvariantMassF18in.root","READ");
     TTree *results2 = (TTree*)file2->Get("results");
 
     results2->SetMakeClass(1);
@@ -158,7 +158,7 @@ int FitResults(string pdfname="Full_Invariant", double EP=-0.030 , double Q2cut=
     }
 
     //---------------FALL 2018  OUTBENDING----------
-    TFile *file3 = new TFile("/lustre19/expphy/volatile/clas12/mtenorio/AnalysisJpsi/Root/InvariantMassF18out.root","READ");
+    TFile *file3 = new TFile("/lustre19/expphy/volatile/clas12/mtenorio/Root/InvariantMassF18out.root","READ");
     TTree *results3 = (TTree*)file3->Get("results");
 
     results3->SetMakeClass(1);
