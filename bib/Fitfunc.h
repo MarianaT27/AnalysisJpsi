@@ -190,10 +190,14 @@ TF1* CB3(TH1* h, double x1, double x2, double x3, double x4,  double x5, double 
 
 
 void plotgraph(double_t* variable, double_t* error, TString name, double_t OValue=0, double_t OValueE=0, int color=600){
-  double Bins[10] ={8.425, 8.775, 8.975, 9.125, 9.33, 9.58, 9.85, 10.1, 10.3, 10.5};
-  double BinsE[10]={0.225, 0.125, 0.075, 0.075, 0.13, 0.12, 0.15, 0.10, 0.10, 0.10};
+  //double Bins[10] ={8.425, 8.775, 8.975, 9.125, 9.33, 9.58, 9.85, 10.1, 10.3, 10.5};
+  //double BinsE[10]={0.225, 0.125, 0.075, 0.075, 0.13, 0.12, 0.15, 0.10, 0.10, 0.10};
 
-  TGraphErrors *gr = new TGraphErrors(10,Bins,variable,BinsE,error);
+  double Bins[4] ={8.625, 9.225, 9.73, 10.3};
+  double BinsE[4]={0.425, 0.205, 0.27, 0.3};
+
+
+  TGraphErrors *gr = new TGraphErrors(4,Bins,variable,BinsE,error);
   gr->SetMarkerStyle(8);
   gr->SetTitle(name+"; E_{#gamma} ; # Events");
   gr->GetXaxis()->SetRangeUser(8.2, 10.6);
@@ -211,17 +215,20 @@ void plotgraph(double_t* variable, double_t* error, TString name, double_t OValu
 }
 
 void plot2graph(double_t variable[4][10], double_t error[4][10], TString name, int g1=0, int g2=1, double_t OValue=0, double_t OValueE=0, double_t OValue2=0, double_t OValueE2=0){
-  double Bins[10] ={8.425, 8.775, 8.975, 9.125, 9.33, 9.58, 9.85, 10.1, 10.3, 10.5};
-  double BinsE[10]={0.225, 0.125, 0.075, 0.075, 0.13, 0.12, 0.15, 0.10, 0.10, 0.10};
+  //double Bins[10] ={8.425, 8.775, 8.975, 9.125, 9.33, 9.58, 9.85, 10.1, 10.3, 10.5};
+  //double BinsE[10]={0.225, 0.125, 0.075, 0.075, 0.13, 0.12, 0.15, 0.10, 0.10, 0.10};
 
-  TGraphErrors *gr = new TGraphErrors(10,Bins,variable[g1],BinsE,error[g1]);
+  double Bins[4] ={8.625, 9.225, 9.73, 10.3};
+  double BinsE[4]={0.425, 0.205, 0.27, 0.3};
+
+  TGraphErrors *gr = new TGraphErrors(4,Bins,variable[g1],BinsE,error[g1]);
   gr->SetMarkerStyle(22);
   gr->SetMarkerColor(kBlue);
   gr->SetTitle(name+"; E_{#gamma} ; # Events");
   gr->GetXaxis()->SetRangeUser(8.2, 10.6);
   gr->Draw("AEP");
 
-  TGraphErrors *gr2 = new TGraphErrors(10,Bins,variable[g2],BinsE,error[g2]);
+  TGraphErrors *gr2 = new TGraphErrors(4,Bins,variable[g2],BinsE,error[g2]);
   gr2->SetMarkerStyle(23);
   gr2->SetMarkerColor(kRed);
   gr2->Draw("P");
@@ -255,7 +262,7 @@ void plot2graph(double_t variable[4][10], double_t error[4][10], TString name, i
 
 
 void Bin_invariant(TH1F* h[], double_t Epho, double_t invariantMass){
-  if(Epho>=8.2 && Epho<8.65)
+  /*if(Epho>=8.2 && Epho<8.65)
     h[0]->Fill(invariantMass);
   else if(Epho<8.9)
     h[1]->Fill(invariantMass);
@@ -274,7 +281,16 @@ void Bin_invariant(TH1F* h[], double_t Epho, double_t invariantMass){
   else if(Epho<10.4)
     h[8]->Fill(invariantMass);
   else if(Epho<10.6)
-    h[9]->Fill(invariantMass);
+    h[9]->Fill(invariantMass);*/
+
+  if(Epho>=8.2 && Epho<9.05)
+    h[0]->Fill(invariantMass);
+  else if(Epho<9.46)
+    h[1]->Fill(invariantMass);
+  else if(Epho<10)
+    h[2]->Fill(invariantMass);
+  else if(Epho<10.6)
+    h[3]->Fill(invariantMass);
 
 }
 
