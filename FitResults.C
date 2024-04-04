@@ -371,11 +371,11 @@ int FitResults(string pdfname="Full_Invariant", double EP=-0.030 , double Q2cut=
     plot2graph(Amplitude,AmplitudeE, "N_{J/#psi}",0,1);
 
     can->cd(3);
-    plot2graph(Mean, MeanE, "Mean ",0,1, gp->GetParameter(1),gp->GetParError(1),cp3->GetParameter(4),cp3->GetParError(4));
+    plot2graph(Mean, MeanE, "Mean",0,1, gp->GetParameter(1),gp->GetParError(1),cp3->GetParameter(4),cp3->GetParError(4));
     
 
     can->cd(4);
-    plot2graph(Sigma, SigmaE, "Sigma ",0,1, gp->GetParameter(2),gp->GetParError(2), cp3->GetParameter(3),cp3->GetParError(3));
+    plot2graph(Sigma, SigmaE, "Sigma",0,1, gp->GetParameter(2),gp->GetParError(2), cp3->GetParameter(3),cp3->GetParError(3));
 
     can->Print( (pdf_original+"(").c_str());
 
@@ -389,10 +389,10 @@ int FitResults(string pdfname="Full_Invariant", double EP=-0.030 , double Q2cut=
     plot2graph(Amplitude,AmplitudeE, "N_{J/#psi}",2,3);
 
     can->cd(3);
-    plot2graph(Mean, MeanE, "Mean ",2,3,ge->GetParameter(1),ge->GetParError(1),ce3->GetParameter(4),ce3->GetParError(4));
+    plot2graph(Mean, MeanE, "Mean",2,3,ge->GetParameter(1),ge->GetParError(1),ce3->GetParameter(4),ce3->GetParError(4));
 
     can->cd(4);
-    plot2graph(Sigma, SigmaE, "Sigma ",2,3,ge->GetParameter(2),ge->GetParError(2), ce3->GetParameter(3),ce3->GetParError(3));
+    plot2graph(Sigma, SigmaE, "Sigma",2,3,ge->GetParameter(2),ge->GetParError(2), ce3->GetParameter(3),ce3->GetParError(3));
 
 
     can->Print( (pdf_original+")").c_str());
