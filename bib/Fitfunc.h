@@ -227,9 +227,9 @@ void plot2graph(double_t variable[4][10], double_t error[4][10], TString name, i
   gr->SetTitle(name+"; E_{#gamma} ; "+ name);
   gr->GetXaxis()->SetRangeUser(8.2, 10.6);
   if(name=="Mean")
-    gr->GetYaxis()->SetRangeUser(3.05,3.15);
+    gr->GetYaxis()->SetRangeUser(3.06,3.12);
   else if(name=="Sigma")
-    gr->GetYaxis()->SetRangeUser(-0.05, 0.20);
+    gr->GetYaxis()->SetRangeUser(0.0, 0.10);
   
   gr->Draw("AEP");
 
