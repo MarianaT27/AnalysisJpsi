@@ -226,6 +226,7 @@ void plot2graph(double_t variable[4][10], double_t error[4][10], TString name, i
   gr->SetMarkerColor(kBlue);
   gr->SetTitle(name+"; E_{#gamma} ; # Events");
   gr->GetXaxis()->SetRangeUser(8.2, 10.6);
+  gr->GetYaxis()->SetRangeUser(OValue-OValueE*10, OValue+OValueE*10);
   gr->Draw("AEP");
 
   TGraphErrors *gr2 = new TGraphErrors(4,Bins,variable[g2],BinsE,error[g2]);
