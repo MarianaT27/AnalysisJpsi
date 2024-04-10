@@ -18,6 +18,7 @@
 #include "TMVA/Reader.h"
 #include "TMVA/MethodCuts.h"
 #include "bib/Fitfunc.h"
+#include "bib/func.h"
 
 
 // QADB header and namespace
@@ -98,99 +99,14 @@ int FitResults(string pdfname="Full_Invariant", double EP=-0.030 , double Q2cut=
       
     }
 
-  
-    //---------------SPRING 2019----------
-
-    TFile *file1 = new TFile("/lustre19/expphy/volatile/clas12/mtenorio/Root/InvariantMassS19.root","READ");
-    TTree *results1 = (TTree*)file1->Get("results");
-    Double_t invariantMass,t,Q2, EPcut, MM, Egamma;
-
-    results1->SetMakeClass(1);
-    results1->SetBranchAddress("invariantMass",&invariantMass);
-    results1->SetBranchAddress("t",&t);
-    results1->SetBranchAddress("Q2",&Q2);
-    results1->SetBranchAddress("EPcut",&EPcut);
-    results1->SetBranchAddress("MM",&MM);
-    results1->SetBranchAddress("Egamma",&Egamma);
-
-    for(int fc=0;fc<results1->GetEntries();fc++) {//Run 5032 to 5419 // 6616 6783
-      results1->GetEntry(fc);
-      if(EPcut<EP)
-        continue;
-
-      //if(Q2>Q2cut)
-        //continue;
-
-      if(MM>MMcut)
-        continue;
-      h_Invariant->Fill(invariantMass);
-
-      Bin_invariant(h_invariant_Egamma,Egamma,invariantMass);
-
-
-    }
-
-    //---------------FALL 2018 INBENDING----------
-    TFile *file2 = new TFile("/lustre19/expphy/volatile/clas12/mtenorio/Root/InvariantMassF18in.root","READ");
-    TTree *results2 = (TTree*)file2->Get("results");
-
-    results2->SetMakeClass(1);
-    results2->SetBranchAddress("invariantMass",&invariantMass);
-    results2->SetBranchAddress("t",&t);
-    results2->SetBranchAddress("Q2",&Q2);
-    results2->SetBranchAddress("EPcut",&EPcut);
-    results2->SetBranchAddress("MM",&MM);
-    results2->SetBranchAddress("Egamma",&Egamma);
-
-    for(int fc=0;fc<results2->GetEntries();fc++) {//Run 5032 to 5419 // 6616 6783
-      results2->GetEntry(fc);
-      if(EPcut<EP)
-        continue;
-
-      //if(Q2>Q2cut)
-        //continue;
-
-      if(MM>MMcut)
-        continue;
-      h_Invariant->Fill(invariantMass);
-
-      Bin_invariant(h_invariant_Egamma,Egamma,invariantMass);
-    }
-
-    //---------------FALL 2018  OUTBENDING----------
-    TFile *file3 = new TFile("/lustre19/expphy/volatile/clas12/mtenorio/Root/InvariantMassF18out.root","READ");
-    TTree *results3 = (TTree*)file3->Get("results");
-
-    results3->SetMakeClass(1);
-    results3->SetBranchAddress("invariantMass",&invariantMass);
-    results3->SetBranchAddress("t",&t);
-    results3->SetBranchAddress("Q2",&Q2);
-    results3->SetBranchAddress("EPcut",&EPcut);
-    results3->SetBranchAddress("MM",&MM);
-    results3->SetBranchAddress("Egamma",&Egamma);
-
-    for(int fc=0;fc<results3->GetEntries();fc++) {//Run 5032 to 5419 // 6616 6783
-      results3->GetEntry(fc);
-      if(EPcut<EP)
-        continue;
-
-      //if(Q2>Q2cut)
-        //continue;
-
-      if(MM>MMcut)
-        continue;
-      h_Invariant->Fill(invariantMass);
-
-      Bin_invariant(h_invariant_Egamma,Egamma,invariantMass);
-
-    }
+    Get_histos(h_Invariant, h_invariant_Egamma, "InvariantMassS19", EP);
+    Get_histos(h_Invariant, h_invariant_Egamma, "InvariantMassF18in", EP);
+    Get_histos(h_Invariant, h_invariant_Egamma, "InvariantMassF18out", EP);
 
 
 
     TCanvas *can = new TCanvas("can","canvas",200,10,1000,700);
     string pdf_original=pdfname+".pdf";
-
-
 
     gStyle->SetOptFit(1111);
     gStyle->SetStatW(0.15);
@@ -210,51 +126,25 @@ int FitResults(string pdfname="Full_Invariant", double EP=-0.030 , double Q2cut=
     double MeanE[4][10]={0};
     double SigmaE[4][10]={0};
 
+     TPaveText *pt = new TPaveText(.05,.1,.95,.8);
+
     double sum=0;
-
+    int init_amp_fit;
     //-----------------------------------------
     //-----------------------------------------
-    cout<<"Fitting full data sets..."<<endl;
-
-    h_Invariant->SetTitle("Gauss + Pol(2)");
-    h_Invariant->Draw();
-    TF1 *gp=g43(h_Invariant,2E3,3.09,0.08,80,70,100,min,max);//e-e+ untagged
-    can->Print( (pdf_original+"(").c_str());
-    can->Clear();
-    
-    h_Invariant->SetTitle("Gauss + Exp");
-    h_Invariant->Draw();
-    TF1 *ge=g44(h_Invariant,2E3,3.09,0.08,20,-10,min,max);//e-e+ untagged
-    can->Print( (pdf_original+"(").c_str());
-    can->Clear();
-
-    h_Invariant->SetTitle("CristalBall + Pol(2)");
-    h_Invariant->Draw();
-    TF1 *cp3=CB2(h_Invariant,2E3,0.75,1E10,0.08,3.1,280,270,100,min,max);//e-e+ untagged
-    can->Print( (pdf_original+"(").c_str());
-    can->Clear();
-
-    h_Invariant->SetTitle("CristalBall + Exp");
-    h_Invariant->Draw();
-    TF1 *ce3=CB3(h_Invariant,2E3,20,1,0.08,3.1,15,-5,min,max);//e-e+ untagged
-    can->Print( (pdf_original+"(").c_str());
-    can->Clear();
-
+    // GAUSS + POLINOMIAL
     //-----------------------------------------
     //-----------------------------------------
 
 
-    can->Divide(4,3);
+    can->Divide(3,2);
     cout<<"Getting Gauss+ Pol(2) fits..."<<endl;
 
     for(int i=0;i<4;i++){
         can->cd(i+1);
         h_invariant_Egamma[i]->Draw();
-
-        //if(i<2)
-         // min=3.2;
-        
-        TF1 *g=g43(h_invariant_Egamma[i],250,3.09,0.08,80,70,100,min,max);
+        init_amp_fit = (h_invariant_Egamma[i]->GetBinContent(h_invariant_Egamma[i]->FindBin(3.096)) > 0.0) ? h_invariant_Egamma[i]->GetBinContent(h_invariant_Egamma[i]->FindBin(3.096)) : 5;
+        TF1 *g=g43(h_invariant_Egamma[i],init_amp_fit,3.096,0.04,7,3,7,min,max);
 
         sum=sum+g->GetParameter(0);
         //Get parameters
@@ -267,28 +157,36 @@ int FitResults(string pdfname="Full_Invariant", double EP=-0.030 , double Q2cut=
         MeanE[0][i]=g->GetParError(1);
         SigmaE[0][i]=g->GetParError(2);
     }
-    can->cd(11);
-
-    TPaveText *pt = new TPaveText(.05,.1,.95,.8);
+    can->cd(5);
     pt->AddText("Gauss + Pol(2) ");
     pt->AddText(Form("%f",sum));
     pt->SetTextSize(0.1);
     pt->Draw();
 
-
+    can->cd(6);
+    h_Invariant->SetTitle("Full Set");
+    h_Invariant->Draw();
+    init_amp_fit = (h_Invariant->GetBinContent(h_Invariant->FindBin(3.096)) > 0.0) ? h_Invariant->GetBinContent(h_Invariant->FindBin(3.096)) : 5;
+    TF1 *gp=g43(h_Invariant,init_amp_fit,3.096,0.04,80,70,100,min,max);//e-e+ untagged
     can->Print( (pdf_original+"(").c_str());
     can->Clear();
-    sum=0;
-    
-    can->Divide(4,3);
-    cout<<"Getting Cristal Ball + Pol(2) fits..."<<endl;
 
+    //-----------------------------------------
+    //-----------------------------------------
+    // CRYSTAL BALL + POLINOMIAL
+    //-----------------------------------------
+    //-----------------------------------------
+
+    sum=0;
+    can->Divide(3,2);
+    cout<<"Getting Crystal Ball + Pol(2) fits..."<<endl;
     for(int i=0;i<4;i++){
         can->cd(i+1);
         h_invariant_Egamma[i]->Draw();
         //if(i<2)
         //  min=3.2;
-        TF1 *c=CB2(h_invariant_Egamma[i],250,0.75,1E10,0.08,3.1,280,270,100,min,max);//e-e+ untagged
+        init_amp_fit = (h_invariant_Egamma[i]->GetBinContent(h_invariant_Egamma[i]->FindBin(3.096)) > 0.0) ? h_invariant_Egamma[i]->GetBinContent(h_invariant_Egamma[i]->FindBin(3.096)) : 5;
+        TF1 *c=CB2(h_invariant_Egamma[i],init_amp_fit,0.75,150,0.04,3.096,7,2,7,min,max);//e-e+ untagged
         //Get parameters
         sum=sum+c->GetParameter(0);
         Amplitude[1][i]=c->GetParameter(0);
@@ -299,24 +197,34 @@ int FitResults(string pdfname="Full_Invariant", double EP=-0.030 , double Q2cut=
         MeanE[1][i]=c->GetParError(4);
         SigmaE[1][i]=c->GetParError(3);
     }
-    can->cd(11);
+    can->cd(5);
     pt->Clear();
     pt->AddText("Crystal Ball + Pol(2) ");
     pt->AddText(Form("%f",sum));
     pt->SetTextSize(0.1);
     pt->Draw();
 
-
+    can->cd(6);
+    h_Invariant->SetTitle("Full Set");
+    h_Invariant->Draw();
+    init_amp_fit = (h_Invariant->GetBinContent(h_Invariant->FindBin(3.096)) > 0.0) ? h_Invariant->GetBinContent(h_Invariant->FindBin(3.096)) : 5;
+    TF1 *cp3=CB2(h_Invariant,init_amp_fit,0.75,150,0.04,3.096,70,2,70,min,max);//e-e+ untagged
     can->Print( (pdf_original+"(").c_str());
     can->Clear();
-    sum=0;
 
-    can->Divide(4,3);
+    //-----------------------------------------
+    //-----------------------------------------
+    // GAUSS + EXPONENTIAL
+    //-----------------------------------------
+    //-----------------------------------------
+    sum=0;
+    can->Divide(3,2);
     cout<<"Getting gauss + Exp fits..."<<endl;
     for(int i=0;i<4;i++){
         can->cd(i+1);
         h_invariant_Egamma[i]->Draw();
-        TF1 *g=g44(h_invariant_Egamma[i],250,3.09,0.08,15,-5,min,max);
+        init_amp_fit = (h_invariant_Egamma[i]->GetBinContent(h_invariant_Egamma[i]->FindBin(3.096)) > 0.0) ? h_invariant_Egamma[i]->GetBinContent(h_invariant_Egamma[i]->FindBin(3.096)) : 5;
+        TF1 *g=g44(h_invariant_Egamma[i],init_amp_fit,3.096,0.04,7,-2,min,max);
         sum=sum+g->GetParameter(0);
         //Get parameters
         Amplitude[2][i]=g->GetParameter(0);
@@ -327,22 +235,34 @@ int FitResults(string pdfname="Full_Invariant", double EP=-0.030 , double Q2cut=
         MeanE[2][i]=g->GetParError(1);
         SigmaE[2][i]=g->GetParError(2);
     }
-    can->cd(11);
+    can->cd(5);
     pt->Clear();
     pt->AddText("Gauss + Exp ");
     pt->AddText(Form("%f",sum));
     pt->SetTextSize(0.1);
     pt->Draw();
+
+    can->cd(6);
+    h_Invariant->SetTitle("Full Set");
+    h_Invariant->Draw();
+    init_amp_fit = (h_Invariant->GetBinContent(h_Invariant->FindBin(3.096)) > 0.0) ? h_Invariant->GetBinContent(h_Invariant->FindBin(3.096)) : 5;
+    TF1 *ge=g44(h_Invariant,init_amp_fit,3.096,0.04,7,-2,min,max);//e-e+ untagged
     can->Print( (pdf_original+"(").c_str());
     can->Clear();
-    
-    can->Divide(4,3);
+
+    //-----------------------------------------
+    //-----------------------------------------
+    // CRYSTAL BALL + EXPONENTIAL
+    //-----------------------------------------
+    //-----------------------------------------
+    can->Divide(3,2);
     sum=0;
     cout<<"Getting CB + Exp fits..."<<endl;
     for(int i=0;i<4;i++){
         can->cd(i+1);
         h_invariant_Egamma[i]->Draw();
-        TF1 *c=CB3(h_invariant_Egamma[i],250,0.75,1E10,0.08,3.1,15,-5,min,max);//e-e+ untagged
+        init_amp_fit = (h_invariant_Egamma[i]->GetBinContent(h_invariant_Egamma[i]->FindBin(3.096)) > 0.0) ? h_invariant_Egamma[i]->GetBinContent(h_invariant_Egamma[i]->FindBin(3.096)) : 5;
+        TF1 *c=CB3(h_invariant_Egamma[i],init_amp_fit,0.75,150,0.04,3.096,7,-2,min,max);//e-e+ untagged
         sum=sum+c->GetParameter(0);
         //Get parameters
         Amplitude[3][i]=c->GetParameter(0);
@@ -353,16 +273,27 @@ int FitResults(string pdfname="Full_Invariant", double EP=-0.030 , double Q2cut=
         MeanE[3][i]=c->GetParError(4);
         SigmaE[3][i]=c->GetParError(3);
     }
-    can->cd(11);
+    can->cd(5);
     pt->Clear();
     pt->AddText("Crystal Ball + Exp ");
     pt->AddText(Form("%f",sum));
     pt->SetTextSize(0.1);
     pt->Draw();
 
+    can->cd(6);
+    h_Invariant->SetTitle("Full Set");
+    h_Invariant->Draw();
+    init_amp_fit = (h_Invariant->GetBinContent(h_Invariant->FindBin(3.096)) > 0.0) ? h_Invariant->GetBinContent(h_Invariant->FindBin(3.096)) : 5;
+    TF1 *ce3=CB3(h_Invariant,init_amp_fit,0.75,150,0.04,3.096,7,-2,min,max);//e-e+ untagged
     can->Print( (pdf_original+"(").c_str());
     can->Clear();
 
+
+    //-----------------------------------------
+    //-----------------------------------------
+    // RESULTS
+    //-----------------------------------------
+    //-----------------------------------------
     can->Divide(2,2);
     can->cd(1);
     plotgraph(Events,EventsE, "Number Events polinomial");

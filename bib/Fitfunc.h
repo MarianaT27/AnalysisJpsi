@@ -15,12 +15,11 @@ TF1* g43(TH1* h, double x1, double x2, double x3, double x4, double x5, double x
 
 
   f->SetParameters(x1, x2, x3, x4,x5,x6);
-
-  f->SetParLimits (0,1,x1);
-  f->SetParLimits (1,3.08,3.11);
-  f->SetParLimits (2,0.030,0.1);
-  //f->SetParLimits (3,0,50);
-  f->SetParLimits (5,0.5,x6);
+  f->SetParLimits (0,x1*0.1,x1*15);
+  f->SetParLimits (1,3.08,3.12);
+  f->SetParLimits (2,0.025,0.15);
+  f->SetParLimits (3,0,100000);
+  f->SetParLimits (5,0,100000);
 
   f->SetParNames("X1", "Mean", "sigma", "X4","X5","X6");
 
@@ -37,6 +36,33 @@ TF1* g43(TH1* h, double x1, double x2, double x3, double x4, double x5, double x
 
   back->Draw("same");
   gauss->Draw("same");
+
+  double minB,maxB;
+  minB=f->GetParameter(1)-3*f->GetParameter(2);
+  maxB=f->GetParameter(1)+3*f->GetParameter(2);
+
+  //number of events under the peak (3sigmas)
+  double n3=h->Integral(h->FindFixBin(minB), h->FindFixBin(maxB), "");
+  //number of events in the 2.6-minB
+  double nbgr=h->Integral(h->FindFixBin(low), h->FindFixBin(minB), "");
+
+  //Nh, Nb, C, Nfb,Cfb as defined in Eq (27)-(31) of "J/Psi analysis steps" 2021 note
+  //Nh is the number of events in the 2.6-minB range, we have to take into account bin size
+  //Nh should be equal to nbgr
+  auto Nh=back->Integral(low,minB)*100;
+  //Nb is the number of events under the J/psi peak (3sigmas), we have to take into account bin size.
+  auto Nb=back->Integral(minB,maxB)*100;
+  //C the ratio of Nb/Nh
+  auto C=Nb/Nh;
+  //Nfb the total #background in the full spectrum
+  auto Nfb=back->Integral(low,high);
+  //Scaling factor
+  auto Cfb=Nfb/Nh;
+
+  //#of Jpsi events as defined in Eq (32) of note
+  auto Njpsi=n3-(C*Nh);
+  cout<<"Njpsi is:"<<Njpsi<<" and from fit:"<<f->GetParameter(0)<<endl;
+  cout<<endl;
 
 
   return f;
@@ -57,11 +83,11 @@ TF1* g44(TH1* h, double x1, double x2, double x3, double x4, double x5, double l
 
   f->SetParameters(x1, x2, x3, x4, x5);
 
-  f->SetParLimits (0,1,x1);
-  f->SetParLimits (1,3.08,3.11);
-  f->SetParLimits (2,0.030,0.09);
-  //f->SetParLimits (3,0,50);
-  //f->SetParLimits (4,-3,-0.01);
+  f->SetParLimits (0,x1*0.1,x1*10);
+  f->SetParLimits (1,3.08,3.12);
+  f->SetParLimits (2,0.025,0.15);
+  f->SetParLimits (3,0.0,1.0E5);
+  f->SetParLimits (4,-1.0E5,0.0);
 
   f->SetParNames("X1", "Mean", "sigma", "X4","X5");
 
@@ -107,8 +133,6 @@ double crystalball_function(double x, double alpha, double n, double sigma, doub
 //-------------------------------------------------------
 
 TF1* CB2(TH1* h, double x1, double x2, double x3, double x4,  double x5, double x6, double x7, double x8, double low, double high){
-
-
   TF1* f = new TF1(((TString)"background_fit") + h->GetName(),"[0]*(1.0/100)*crystalball_function(x, [1], [2], [3], [4]) + [5]*(x-[4])*(x-[4]) - [6]*(x-[4]) + [7]", low, high);
 
   TF1* CB = new TF1(h->GetName(),"[0]*(1.0/100)*crystalball_function(x, [1], [2], [3], [4])",low,high);
@@ -119,14 +143,15 @@ TF1* CB2(TH1* h, double x1, double x2, double x3, double x4,  double x5, double 
 
 
   f->SetParameters(x1, x2, x3, x4, x5,x6,x7,x8);
-  f->SetParLimits (0,1,x1);
-  //f->SetParLimits (1,0,1);
-  //f->SetParLimits (2,-x3,x3);
-  f->SetParLimits (3,0.02,0.09);
-  f->SetParLimits (4,3.08,3.11);
+  f->SetParLimits (0,x1*0.1,x1*10);
+  f->SetParLimits (1,0.10,1.5);
+  f->SetParLimits (2,1,500);
+  f->SetParLimits (3,0.025,0.15);
+  f->SetParLimits (4,3.08,3.12);
 
+  f->SetParLimits (6,0.0,1E5);
   //f->SetParLimits (5,0,50);
-  f->SetParLimits (7,0.5,x8);
+  f->SetParLimits (7,0.0,1E5);
 
   f->SetParNames("A","alpha", "n", "sigma", "mean","x6","x7","x8");
 
@@ -161,12 +186,14 @@ TF1* CB3(TH1* h, double x1, double x2, double x3, double x4,  double x5, double 
 
 
   f->SetParameters(x1, x2, x3, x4, x5,x6,x7);
-  f->SetParLimits (0,1,x1);
-  f->SetParLimits (1,0.50,20);
-  //f->SetParLimits (2,-x3,x3);
-  f->SetParLimits (3,0.03,0.09);
-  f->SetParLimits (4,3.08,3.11);
-  //f->SetParLimits (6,-3.025,-0.01);
+  f->SetParLimits (0,x1*0.1,x1*10);
+  f->SetParLimits (1,0.10,1.5);
+  f->SetParLimits (2,1,500);
+  f->SetParLimits (3,0.025,0.15);
+  f->SetParLimits (4,3.08,3.12);
+
+  f->SetParLimits (5,0.0,1.0E5);
+  f->SetParLimits (6,-1.0E5,0.0);
 
   f->SetParNames("A","alpha", "n", "sigma", "mean","x6","x7");
 
@@ -266,38 +293,7 @@ void plot2graph(double_t variable[4][10], double_t error[4][10], TString name, i
 }
 
 
-void Bin_invariant(TH1F* h[], double_t Epho, double_t invariantMass){
-  /*if(Epho>=8.2 && Epho<8.65)
-    h[0]->Fill(invariantMass);
-  else if(Epho<8.9)
-    h[1]->Fill(invariantMass);
-  else if(Epho<9.05)
-    h[2]->Fill(invariantMass);
-  else if(Epho<9.2)
-    h[3]->Fill(invariantMass);
-  else if(Epho<9.46)
-    h[4]->Fill(invariantMass);
-  else if(Epho<9.7)
-    h[5]->Fill(invariantMass);
-  else if(Epho<10)
-    h[6]->Fill(invariantMass);
-  else if(Epho<10.2)
-    h[7]->Fill(invariantMass);
-  else if(Epho<10.4)
-    h[8]->Fill(invariantMass);
-  else if(Epho<10.6)
-    h[9]->Fill(invariantMass);*/
 
-  if(Epho>=8.2 && Epho<9.05)
-    h[0]->Fill(invariantMass);
-  else if(Epho<9.46)
-    h[1]->Fill(invariantMass);
-  else if(Epho<10)
-    h[2]->Fill(invariantMass);
-  else if(Epho<10.6)
-    h[3]->Fill(invariantMass);
-
-}
 
 
 
