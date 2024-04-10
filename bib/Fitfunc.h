@@ -3,114 +3,7 @@
 
 const string lnames[4]={"G+Pol","CB+Pol","G+Exp","CB+Exp"};
 
-TF1* g43(TH1* h, double x1, double x2, double x3, double x4, double x5, double x6, double low, double high){
-
-  TF1* f = new TF1(((TString)"background_fit") + h->GetName(),"[0]*0.398942*(1.0/100)*TMath::Exp(-0.5*((x-[1])/([2]))*((x-[1])/([2])))/TMath::Abs([2]) + [3]*(x-[1])*(x-[1]) - [4]*(x-[1]) + [5]",
-  low, high);
-
-  TF1* back = new TF1(((TString)"background_fit")," [1]*(x-[0])*(x-[0]) - [2]*(x-[0]) + [3]",low, high);
-
-  TF1* gauss = new TF1(((TString)"peak"),"[0]*0.398942*(1.0/100)*TMath::Exp(-0.5*((x-[1])/([2]))*((x-[1])/([2])))/TMath::Abs([2])",
-  low, high);
-
-
-  f->SetParameters(x1, x2, x3, x4,x5,x6);
-  f->SetParLimits (0,x1*0.1,x1*15);
-  f->SetParLimits (1,3.08,3.12);
-  f->SetParLimits (2,0.025,0.15);
-  f->SetParLimits (3,0,100000);
-  f->SetParLimits (5,0,100000);
-
-  f->SetParNames("X1", "Mean", "sigma", "X4","X5","X6");
-
-  h->Fit(f, "MEQ", "same", low, high);
-
-  double par[6];
-  f->GetParameters(par);
-  back->SetParameters(par[1], par[3], par[4],par[5]);
-  gauss->SetParameters(par[0], par[1], par[2]);
-
-
-  back->SetLineColor(kBlue);
-  gauss->SetLineColor(kGreen);
-
-  back->Draw("same");
-  gauss->Draw("same");
-
-  double minB,maxB;
-  minB=f->GetParameter(1)-3*f->GetParameter(2);
-  maxB=f->GetParameter(1)+3*f->GetParameter(2);
-
-  //number of events under the peak (3sigmas)
-  double n3=h->Integral(h->FindFixBin(minB), h->FindFixBin(maxB), "");
-  //number of events in the 2.6-minB
-  double nbgr=h->Integral(h->FindFixBin(low), h->FindFixBin(minB), "");
-
-  //Nh, Nb, C, Nfb,Cfb as defined in Eq (27)-(31) of "J/Psi analysis steps" 2021 note
-  //Nh is the number of events in the 2.6-minB range, we have to take into account bin size
-  //Nh should be equal to nbgr
-  auto Nh=back->Integral(low,minB)*100;
-  //Nb is the number of events under the J/psi peak (3sigmas), we have to take into account bin size.
-  auto Nb=back->Integral(minB,maxB)*100;
-  //C the ratio of Nb/Nh
-  auto C=Nb/Nh;
-  //Nfb the total #background in the full spectrum
-  auto Nfb=back->Integral(low,high);
-  //Scaling factor
-  auto Cfb=Nfb/Nh;
-
-  //#of Jpsi events as defined in Eq (32) of note
-  auto Njpsi=n3-(C*Nh);
-  cout<<"Njpsi is:"<<Njpsi<<" and from fit:"<<f->GetParameter(0)<<endl;
-  cout<<endl;
-
-
-  return f;
-}
-
-TF1* g44(TH1* h, double x1, double x2, double x3, double x4, double x5, double low, double high){
-
-
-  TF1* f = new TF1(((TString)"background_fit") + h->GetName(),"[0]*0.398942*(1.0/100)*TMath::Exp(-0.5*((x-[1])/([2]))*((x-[1])/([2])))/TMath::Abs([2]) + TMath::Exp([3]+[4]*x)",
-  low, high);
-
-  TF1* back = new TF1(((TString)"background_fit")," TMath::Exp([0]+[1]*x)",
-  low, high);
-
-  TF1* gauss = new TF1(((TString)"peak"),"[0]*0.398942*(1.0/100)*TMath::Exp(-0.5*((x-[1])/([2]))*((x-[1])/([2])))/TMath::Abs([2])",
-  low, high);
-
-
-  f->SetParameters(x1, x2, x3, x4, x5);
-
-  f->SetParLimits (0,x1*0.1,x1*10);
-  f->SetParLimits (1,3.08,3.12);
-  f->SetParLimits (2,0.025,0.15);
-  f->SetParLimits (3,0.0,1.0E5);
-  f->SetParLimits (4,-1.0E5,0.0);
-
-  f->SetParNames("X1", "Mean", "sigma", "X4","X5");
-
-  h->Fit(f, "MEQ", "same", low, high);
-
-  double par[5];
-  f->GetParameters(par);
-  back->SetParameters( par[3], par[4]);
-  gauss->SetParameters(par[0], par[1], par[2]);
-
-
-  back->SetLineColor(kBlue);
-  gauss->SetLineColor(kGreen);
-
-  back->Draw("same");
-  gauss->Draw("same");
-
-
-  return f;
-}
-
-
-double crystalball_function(double x, double alpha, double n, double sigma, double mean) {
+double crystalball_function(double x,double mean, double sigma, double alpha, double n) {
   // evaluate the crystal ball function
   if (sigma < 0.)     return 0.;
   double z = (x - mean)/sigma; 
@@ -130,90 +23,265 @@ double crystalball_function(double x, double alpha, double n, double sigma, doub
     return N*AA * std::pow(arg,n);
   }
 }
+
+class Fit_Function{
+public:
+      TF1 *f;
+      TF1 *f_signal;
+      TF1 *f_BG;
+      float min_fit;
+      float max_fit;
+      int bin;
+      float range;
+      //TH1F *h;
+
+      Fit_Function() {}
+
+      /*void Set_Data_hist(TH1F *in_Data_hist){
+        h= (TH1F *)in_Data_hist->Clone("Data_hist");
+      }*/
+
+      void Set_Limits(float in_min_fit, float in_max_fit){
+        min_fit = in_min_fit;
+        max_fit = in_max_fit;
+      }
+
+      void Set_Bin_Range(int in_bin, float in_min, float in_max){
+        bin = in_bin;
+        range = in_max-in_min;
+      }
+
+      double GetNJpsi(TH1* h){
+          double minB,maxB;
+          minB=f->GetParameter(1)-3*f->GetParameter(2);
+          maxB=f->GetParameter(1)+3*f->GetParameter(2);
+
+          //number of events under the peak (3sigmas)
+          double n3=h->Integral(h->FindFixBin(minB), h->FindFixBin(maxB), "");
+          //number of events in the 2.6-minB
+          double nbgr=h->Integral(h->FindFixBin(min_fit), h->FindFixBin(minB), "");
+
+          //Nh, Nb, C, Nfb,Cfb as defined in Eq (27)-(31) of "J/Psi analysis steps" 2021 note
+          //Nh is the number of events in the 2.6-minB range, we have to take into account bin size
+          //Nh should be equal to nbgr
+          auto Nh=f_BG->Integral(min_fit,minB)*bin;
+          //Nb is the number of events under the J/psi peak (3sigmas), we have to take into account bin size.
+          auto Nb=f_BG->Integral(minB,maxB)*bin;
+          //C the ratio of Nb/Nh
+          auto C=Nb/Nh;
+          //Nfb the total #background in the full spectrum
+          auto Nfb=f_BG->Integral(min_fit,max_fit)*bin;
+          //Scaling factor
+          auto Cfb=Nfb/Nh;
+
+          //#of Jpsi events as defined in Eq (32) of note
+          auto Njpsi=n3-(C*Nh);
+          cout<<"Njpsi is:"<<Njpsi<<" and from fit:"<<f->GetParameter(0)<<endl;
+          cout<<endl;
+
+          return Njpsi;
+
+      }
+
+      TF1* Fit_Gauss_Pol2(TH1* h){
+          f = new TF1(((TString)"background_fit") + h->GetName(),"[0]*0.398942*(1.0/100)*TMath::Exp(-0.5*((x-[1])/([2]))*((x-[1])/([2])))/TMath::Abs([2]) + [3]*(x-[1])*(x-[1]) - [4]*(x-[1]) + [5]",
+          min_fit, max_fit);
+
+          int init_amp_fit = (h->GetBinContent(h->FindBin(3.096)) > 0.0) ? h->GetBinContent(h->FindBin(3.096)) : 5;
+
+          f->SetParameters(init_amp_fit, 3.096,0.04,7,3,7);
+          f->SetParLimits (0,init_amp_fit*0.1,init_amp_fit*100);
+          f->SetParLimits (1,3.08,3.12);
+          f->SetParLimits (2,0.025,0.15);
+          f->SetParLimits (3,0,100000);
+          f->SetParLimits (5,1,100000);
+
+          f->SetParNames("A", "Mean", "Sigma", "a","b","c");
+
+          h->Fit(f, "MEQ", "same", min_fit, max_fit);
+
+          double par[6];
+          f->GetParameters(par);
+
+          f_BG= new TF1(((TString)"background_fit")," [1]*(x-[0])*(x-[0]) - [2]*(x-[0]) + [3]",min_fit, max_fit);
+          f_signal = new TF1(((TString)"peak"),"[0]*0.398942*(1.0/100)*TMath::Exp(-0.5*((x-[1])/([2]))*((x-[1])/([2])))/TMath::Abs([2])",
+          min_fit, max_fit);
+
+          f_BG->SetParameters(par[1], par[3], par[4],par[5]);
+          f_signal->SetParameters(par[0], par[1], par[2]);
+
+
+          f_BG->SetLineColor(kBlue);
+          f_signal->SetLineColor(kGreen);
+
+          f_BG->Draw("same");
+          f_signal->Draw("same");
+          
+          return f;
+      }
+
+      TF1* Fit_Gauss_Exp(TH1* h){
+
+        f = new TF1(((TString)"background_fit") + h->GetName(),"[0]*0.398942*(1.0/100)*TMath::Exp(-0.5*((x-[1])/([2]))*((x-[1])/([2])))/TMath::Abs([2]) + TMath::Exp([3]+[4]*x)",
+        min_fit, max_fit);
+
+        int init_amp_fit = (h->GetBinContent(h->FindBin(3.096)) > 0.0) ? h->GetBinContent(h->FindBin(3.096)) : 5;
+
+        f->SetParameters(init_amp_fit,3.096,0.04,7,-2);
+
+        f->SetParLimits (0,init_amp_fit*0.1,init_amp_fit*100);
+        f->SetParLimits (1,3.08,3.12);
+        f->SetParLimits (2,0.025,0.15);
+        f->SetParLimits (3,0.0,1.0E5);
+        f->SetParLimits (4,-1.0E5,0.0);
+
+        f->SetParNames("A", "Mean", "sigma", "X4","X5");
+
+        h->Fit(f, "MEQ", "same",min_fit, max_fit);
+
+        double par[5];
+
+        f_BG = new TF1(((TString)"background_fit")," TMath::Exp([0]+[1]*x)",min_fit, max_fit);
+
+        f_signal = new TF1(((TString)"peak"),"[0]*0.398942*(1.0/100)*TMath::Exp(-0.5*((x-[1])/([2]))*((x-[1])/([2])))/TMath::Abs([2])",
+        min_fit, max_fit);
+
+        f->GetParameters(par);
+        f_BG->SetParameters( par[3], par[4]);
+        f_signal->SetParameters(par[0], par[1], par[2]);
+
+
+        f_BG->SetLineColor(kBlue);
+        f_signal->SetLineColor(kGreen);
+
+        f_BG->Draw("same");
+        f_signal->Draw("same");
+
+
+        return f;
+      }
+
+      TF1* Fit_CrystallBall_Pol2(TH1* h){
+          f = new TF1(((TString)"background_fit") + h->GetName(),"[0]*(1.0/100)*crystalball_function(x, [1], [2], [3], [4]) + [5]*(x-[1])*(x-[1]) - [6]*(x-[1]) + [7]", min_fit, max_fit);
+
+          int init_amp_fit = (h->GetBinContent(h->FindBin(3.096)) > 0.0) ? h->GetBinContent(h->FindBin(3.096)) : 5;
+
+          f->SetParameters(init_amp_fit,3.096,0.04,0.75,250,7,3,7);
+
+          f->SetParLimits (0,init_amp_fit*0.1,init_amp_fit*100);
+          f->SetParLimits (1,3.08,3.12);
+          f->SetParLimits (2,0.025,0.15);
+          f->SetParLimits (3,0.50,1.5);
+          f->SetParLimits (4,10,500);
+
+          f->SetParLimits (5,0,100000);
+          //f->SetParLimits (6,0,250);
+          f->SetParLimits (7,1,100000);
+
+          f->SetParNames("A","mean", "sigma", "alpha","n","a","b","c");
+
+
+          h->Fit(f, "MEQ", "same",min_fit, max_fit);
+
+          double par[8];
+          f_signal = new TF1(h->GetName(),"[0]*(1.0/100)*crystalball_function(x, [1], [2], [3], [4])",min_fit, max_fit);
+          f_BG = new TF1(((TString)"background_fit")," [1]*(x-[0])*(x-[0]) - [2]*(x-[0]) + [3]",min_fit, max_fit);
+
+          f->GetParameters(par);
+          f_signal->SetParameters(par[0], par[1], par[2],par[3],par[4]);
+          f_BG->SetParameters(par[1], par[5], par[6],par[7]);
+
+
+          f_BG->SetLineColor(kBlue);
+          f_signal->SetLineColor(kGreen);
+
+          f_BG->Draw("same");
+          f_signal->Draw("same");
+
+          return f;
+      }
+
+      TF1* Fit_CrystallBall_Exp(TH1* h){
+        f = new TF1(((TString)"background_fit") + h->GetName(),"[0]*(1.0/100)*crystalball_function(x, [1], [2], [3], [4]) + TMath::Exp([5]+[6]*x)", min_fit, max_fit);
+        int init_amp_fit = (h->GetBinContent(h->FindBin(3.096)) > 0.0) ? h->GetBinContent(h->FindBin(3.096)) : 5;
+        f->SetParameters(init_amp_fit,3.096,0.04,0.75,250,7,-2);
+        f->SetParLimits (0,init_amp_fit*0.1,init_amp_fit*100);
+        f->SetParLimits (1,3.08,3.12);
+        f->SetParLimits (2,0.025,0.15);
+        f->SetParLimits (3,0.50,1.5);
+        f->SetParLimits (4,10,1000);
+
+        f->SetParLimits (5,0.0,1.0E5);
+        f->SetParLimits (6,-1.0E5,0.0);
+
+        f->SetParNames("A","mean", "sigma", "alpha", "n","x6","x7");
+
+
+        h->Fit(f, "MEQ", "same", min_fit, max_fit);
+
+        double par[7];
+        f_BG = new TF1(((TString)"background_fit")," TMath::Exp([0]+[1]*x)", min_fit, max_fit);
+
+        f_signal = new TF1(h->GetName(),"[0]*(1.0/100)*crystalball_function(x, [1], [2], [3], [4])", min_fit, max_fit);
+
+
+        f->GetParameters(par);
+        f_BG->SetParameters(par[5], par[6]);
+        f_signal->SetParameters(par[0], par[1], par[2],par[3],par[4]);
+
+
+        f_BG->SetLineColor(kBlue);
+        f_signal->SetLineColor(kGreen);
+
+        f_BG->Draw("same");
+        f_signal->Draw("same");
+
+        return f;
+      }
+
+};
+
+//To test
+TF1 *funct;
+      TF1* g43(TH1* h,double low, double high){
+
+        funct = new TF1(((TString)"background_fit") + h->GetName(),"[0]*0.398942*(1.0/100)*TMath::Exp(-0.5*((x-[1])/([2]))*((x-[1])/([2])))/TMath::Abs([2]) + [3]*(x-[1])*(x-[1]) - [4]*(x-[1]) + [5]",
+        low, high);
+
+        TF1* back = new TF1(((TString)"background_fit")," [1]*(x-[0])*(x-[0]) - [2]*(x-[0]) + [3]",low, high);
+
+        TF1* gauss = new TF1(((TString)"peak"),"[0]*0.398942*(1.0/100)*TMath::Exp(-0.5*((x-[1])/([2]))*((x-[1])/([2])))/TMath::Abs([2])",
+        low, high);
+
+
+        funct->SetParameters(250, 3.096,0.04,7,3,7);
+        funct->SetParLimits (0,250*0.1,250*15);
+        funct->SetParLimits (1,3.08,3.12);
+        funct->SetParLimits (2,0.025,0.15);
+        funct->SetParLimits (3,0,100000);
+        funct->SetParLimits (5,0,100000);
+
+        funct->SetParNames("X1", "Mean", "sigma", "X4","X5","X6");
+
+        h->Fit(funct, "MEQ", "same", low, high);
+
+        double par[6];
+        funct->GetParameters(par);
+        back->SetParameters(par[1], par[3], par[4],par[5]);
+        gauss->SetParameters(par[0], par[1], par[2]);
+
+
+        back->SetLineColor(kBlue);
+        gauss->SetLineColor(kGreen);
+
+        back->Draw("same");
+        gauss->Draw("same");
+        return funct;
+    }
+
+
 //-------------------------------------------------------
 
-TF1* CB2(TH1* h, double x1, double x2, double x3, double x4,  double x5, double x6, double x7, double x8, double low, double high){
-  TF1* f = new TF1(((TString)"background_fit") + h->GetName(),"[0]*(1.0/100)*crystalball_function(x, [1], [2], [3], [4]) + [5]*(x-[4])*(x-[4]) - [6]*(x-[4]) + [7]", low, high);
-
-  TF1* CB = new TF1(h->GetName(),"[0]*(1.0/100)*crystalball_function(x, [1], [2], [3], [4])",low,high);
-
-  TF1* back = new TF1(((TString)"background_fit")," [1]*(x-[0])*(x-[0]) - [2]*(x-[0]) + [3]",
-    low, high);
-
-
-
-  f->SetParameters(x1, x2, x3, x4, x5,x6,x7,x8);
-  f->SetParLimits (0,x1*0.1,x1*10);
-  f->SetParLimits (1,0.10,1.5);
-  f->SetParLimits (2,1,500);
-  f->SetParLimits (3,0.025,0.15);
-  f->SetParLimits (4,3.08,3.12);
-
-  f->SetParLimits (6,0.0,1E5);
-  //f->SetParLimits (5,0,50);
-  f->SetParLimits (7,0.0,1E5);
-
-  f->SetParNames("A","alpha", "n", "sigma", "mean","x6","x7","x8");
-
-
-  h->Fit(f, "MEQ", "same",low, high);
-
-  double par[8];
-  f->GetParameters(par);
-  back->SetParameters(par[4], par[5], par[6],par[7]);
-  CB->SetParameters(par[0], par[1], par[2],par[3],par[4]);
-
-
-  back->SetLineColor(kBlue);
-  CB->SetLineColor(kGreen);
-
-  back->Draw("same");
-  CB->Draw("same");
-
-  return f;
-}
-
-TF1* CB3(TH1* h, double x1, double x2, double x3, double x4,  double x5, double x6, double x7, double low, double high){
-
-
-  TF1* CB = new TF1(h->GetName(),"[0]*(1.0/100)*crystalball_function(x, [1], [2], [3], [4])",low,high);
-
-  TF1* f = new TF1(((TString)"background_fit") + h->GetName(),"[0]*(1.0/100)*crystalball_function(x, [1], [2], [3], [4]) + TMath::Exp([5]+[6]*x)", low, high);
-
-  TF1* back = new TF1(((TString)"background_fit")," TMath::Exp([0]+[1]*x)",
-    low, high);
-
-
-
-  f->SetParameters(x1, x2, x3, x4, x5,x6,x7);
-  f->SetParLimits (0,x1*0.1,x1*10);
-  f->SetParLimits (1,0.10,1.5);
-  f->SetParLimits (2,1,500);
-  f->SetParLimits (3,0.025,0.15);
-  f->SetParLimits (4,3.08,3.12);
-
-  f->SetParLimits (5,0.0,1.0E5);
-  f->SetParLimits (6,-1.0E5,0.0);
-
-  f->SetParNames("A","alpha", "n", "sigma", "mean","x6","x7");
-
-
-  h->Fit(f, "MEQ", "same",low, high);
-
-  double par[7];
-  f->GetParameters(par);
-  back->SetParameters(par[5], par[6]);
-  CB->SetParameters(par[0], par[1], par[2],par[3],par[4]);
-
-
-  back->SetLineColor(kBlue);
-  CB->SetLineColor(kGreen);
-
-  back->Draw("same");
-  CB->Draw("same");
-
-  return f;
-}
 
 
 void plotgraph(double_t* variable, double_t* error, TString name, double_t OValue=0, double_t OValueE=0, int color=600){
@@ -253,10 +321,12 @@ void plot2graph(double_t variable[4][10], double_t error[4][10], TString name, i
   gr->SetMarkerColor(kBlue);
   gr->SetTitle(name+"; E_{#gamma} ; "+ name);
   gr->GetXaxis()->SetRangeUser(8.2, 10.6);
-  if(name=="Mean")
+  if(name=="Mean"){
     gr->GetYaxis()->SetRangeUser(3.06,3.12);
-  else if(name=="Sigma")
+  }
+  else if(name=="Sigma"){
     gr->GetYaxis()->SetRangeUser(0.0, 0.10);
+  }
   
   gr->Draw("AEP");
 

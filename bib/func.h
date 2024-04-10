@@ -30,10 +30,10 @@ void Get_histos(TH1F* h_In, TH1F* h_In_bin[],string name, Double_t EPcut=-0.030)
     bool MM_bool=true;
     Double_t MMcut=0.4;
 
-    bool Q2_bool=false;
-    Double_t Q2cut=0.05;
+    bool Q2_bool=true;
+    Double_t Q2cut=0.5;
 
-    bool EP_bool=true;
+    bool EP_bool=false;
     
 
     for(int fc=0;fc<results->GetEntries();fc++) {//Run 5032 to 5419 // 6616 6783
