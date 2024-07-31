@@ -12,7 +12,7 @@
 #include <TChain.h>
 #include <TCanvas.h>
 #include <TBenchmark.h>
-#include "reader.h"
+#include "hipo4/reader.h"
 #include "clas12reader.h"
 #include "TMVA/Tools.h"
 #include "TMVA/Reader.h"
@@ -86,10 +86,11 @@ struct particl {
 //x6=4.4---[5]
 
 
-int untaggedfromroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, int PASS=1,string outFile="out", int MC=0, bool QA=true) {
+int untagged(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, string outFile="_ut", bool FC=true, bool QA=true) {
 // Record start time
   auto start = std::chrono::high_resolution_clock::now();
   int max=0;
+  int TEST=1;
 
 
   //********************************
@@ -176,7 +177,6 @@ int untaggedfromroot(string nameFile="PASS1_FALL", int version=-19, double Beam_
     Double_t FT_vtFcal,FT_xFcal,FT_yFcal,FT_zFcal,RFcal;
 
     //Helicity Variables
-    int run_hel,event_hel,hel_hel;
     int helicity;
 
     int N_FT;
@@ -187,29 +187,21 @@ int untaggedfromroot(string nameFile="PASS1_FALL", int version=-19, double Beam_
     bool electronAccepted, positronAccepted, protonAccepted;
 
     Double_t score_pos,score_ele,score_e,score_p;
+    Double_t score_pos_6,score_ele_6,score_e_6,score_p_6;
 
 
-    //KINEMATICS
-    TH1F* h_E_photon = new TH1F("h_E_photon","Photon Energy",120,0,0);
-    TH1F* h_Q2 = new TH1F("h_Q2","Q^2;Q^2;Counts",120,0,0);
-    TH1F* h_W = new TH1F("h_W","Hadronic Mass;W;Counts",120,4,4.6);
-    TH1F* h_MM= new TH1F("h_MM","Missing Mass; MM; Counts ",90,0,2);
+    //
+    TH2F* h_electron_ECin_vs_PCAL = new TH2F("h_electron_ECin_vs_PCAL","Electron SF-ECin vs. SF-PCAL; SF_{PCAL};SF_{ECIN}",200,0.0,0.3,100,0.0,0.2);
+    TH2F* h_positron_EC_vs_PCAL = new TH2F("h_positron_EC_vs_PCAL","Positrons SF-EC vs. SF-PCALSF_{PCAL};SF_{EC}",200,0.0,0.3,100,0.0,0.2);
+    TH1F* h_electron_zvertex = new TH1F("h_electron_zvertex","z-vertex distribution electron;z-vertex,cm",200,-15,35);
+    TH1F* h_vertex_timediff = new TH1F("h_vertex_timediff","vertex time difference e- e+ ; vt_e^- - vt_e^+, ns",120,-5,5);
+    TH2F* h_theta_vs_p = new TH2F("h_theta_vs_p"," ;P, GeV; #theta, degrees",140,0.0,10,140,0.0,45);
+    
 
-
-    TH2F* h_mm_vs_invariantmass_t= new TH2F("h_mm_vs_invariantmass_t","MM vs M(e^+e^-) for t+-2;M(e^+e^-), GeV;Missing Mass, GeV",150,1,3.5,150,-1,1);
-    TH2F* h_qq_vs_invariantmass= new TH2F("h_qq_vs_invariantmass","Q2 vs M(e^+e^-) outside time cut;M(e^+e^-), GeV;Q2",150,2,3.5,150,0,0.5);
-
-    //RESULTS RESULTS
-    TH1F* h_Invariant= new TH1F("h_im",";M(e+e-),GeV ",100,2.5,3.5);
-    TH1F* h_Invariant_not= new TH1F("h_Invariant_not","Outside time range;M(e+e-),GeV",90,2.6,3.5);
-
-
-    //MOMENTUM FT ELECTRON
-    TH2F* h_sum_cut= new TH2F("h_sum_cut",";Invariant Mass ; #Sum E - #Sum p_{z} -m ",100,2.5,3.5,100,-0.5,0.5);
 
     //--------GET FULL ROOT file---------
     TString root_file;
-    if(MC==1)
+    if(TEST==1)
       root_file= "/lustre19/expphy/volatile/clas12/mtenorio/Root/"+nameFile+".root";
     else
       root_file = "/w/hallb-scshelf2102/clas12/mtenorio/Analysis/"+nameFile+".root";
@@ -249,6 +241,8 @@ int untaggedfromroot(string nameFile="PASS1_FALL", int version=-19, double Beam_
 
     tree->SetBranchAddress("score_ele",&score_ele);
     tree->SetBranchAddress("score_pos",&score_pos);
+    tree->SetBranchAddress("score_ele_6",&score_ele_6);
+    tree->SetBranchAddress("score_pos_6",&score_pos_6);
 
     
     tree->SetBranchAddress("positron_p",&positron_p);
@@ -309,50 +303,37 @@ int untaggedfromroot(string nameFile="PASS1_FALL", int version=-19, double Beam_
     tree->SetBranchAddress("FT_vt",&FT_vt);
 
     //--------SET OUT ROOT file---------
-    TString out_file="/lustre19/expphy/volatile/clas12/mtenorio/Root/InvariantMass"+nameFile+".root";
+    TString out_file="/lustre19/expphy/volatile/clas12/mtenorio/Root/"+nameFile+outFile+".root";
 
     TFile *file2 = new TFile(out_file,"RECREATE");
     TTree *results = new TTree("results",out_file);
 
     Double_t invariantMass, EPcut,MM, Egamma, t;
+    Int_t rn,ev;
+    results->Branch("rn",&rn,"rn/I");
+    results->Branch("ev",&ev,"ev/I");
     results->Branch("invariantMass",&invariantMass,"invariantMass/d");
     results->Branch("t",&t,"t/d");
     results->Branch("Q2",&Q2,"Q2/d");
     results->Branch("EPcut",&EPcut,"EPcut/d");
     results->Branch("MM",&MM,"MM/d");
     results->Branch("Egamma",&Egamma,"Egamma/d");
-    results->Branch("helicity",&helicity,"helicity/I");
+    //results->Branch("helicity",&helicity,"helicity/I");
     results->Branch("score_e",&score_e,"score_e/d");
     results->Branch("score_p",&score_p,"score_p/d");
-
-
-
-   /*  //--------GET Helicity ROOT file---------
-    TString hel_file;
-    hel_file = "/lustre19/expphy/volatile/clas12/mtenorio/Root/"+nameFile+"_hel.root";
-
-    TFile *file_hel = new TFile(hel_file,"READ");
-    TTree *tree_hel = (TTree*)file_hel->Get("analysis");
-
-    tree_hel->SetMakeClass(1);
-
-    tree_hel->SetBranchAddress("run_hel",&run_hel);
-    tree_hel->SetBranchAddress("event_hel",&event_hel);
-    tree_hel->SetBranchAddress("hel_hel",&hel_hel);*/
+    results->Branch("score_e_6",&score_e_6,"score_e_6/d");
+    results->Branch("score_p_6",&score_p_6,"score_p_6/d");
 
     /////////Instanciate QADB///////////
     QADB *qa = new QADB();
-    //Variables 
-    int count_runs=0;
-    int past_run;
+
 
     //Start
     for(int fc=0;fc<tree->GetEntries();fc++) {//Run 5032 to 5419 // 6616 6783
+      tree->GetEntry(fc);
       electronAccepted=false;
       positronAccepted=false;
-      protonAccepted=false;
-
-      tree->GetEntry(fc);
+      protonAccepted=false; 
 
       //If QA is active, then apply it
       if(QA){
@@ -368,22 +349,13 @@ int untaggedfromroot(string nameFile="PASS1_FALL", int version=-19, double Beam_
         if (!Keep_event || Additional_bad_runs)
           continue;
       }
-      
-      //Keep track and count the number of runs used
-      if(fc==0){
-        past_run=run_number;
-        count_runs++;
-      }
-      else{
-        if(run_number!=past_run){
-          past_run=run_number;
-          count_runs++;
-        }
-      }
+
+      //if(positron_p>4.9)
+        //h_theta_vs_p->Fill(positron_p,positron_theta); 
 
       //Start analysis
-      if(number_protons==1){
-
+      if(number_protons==1){ 
+        
         //---------CUTS FOR ELECTRON---------
         if(electron_pcal_energy>0.07  && electron_p>1.7 && electron_p<beam.E()&& electron_pcal_v>9 && electron_pcal_w>9){
           if(version==-18||version==-19){
@@ -419,94 +391,112 @@ int untaggedfromroot(string nameFile="PASS1_FALL", int version=-19, double Beam_
             protonAccepted=true;
           }
 
+        if(FC){
+          if(electronAccepted==false ||positronAccepted==false ||protonAccepted==false)
+            continue;
+          
+          if(abs(electron_vt-positron_vt)>1)
+            continue;
+        }
+        else{
+          electronAccepted=true;
+          positronAccepted=true;
+          protonAccepted=true;
+        }
 
-          if(electronAccepted && positronAccepted && protonAccepted){
-            if(abs(electron_vt-positron_vt)<=1){
-            //------ENERGY CORRECTION ELECTRON------------
-              electron_E_recon=electron_energy+electron_photonE;
-              electron_px_recon=electron_px*(electron_E_recon/electron_energy);
-              electron_py_recon=electron_py*(electron_E_recon/electron_energy);
-              electron_pz_recon=electron_pz*(electron_E_recon/electron_energy);
-              TLorentzVector ele(electron_px_recon,electron_py_recon,electron_pz_recon,electron_E_recon);
+        h_theta_vs_p->Fill(positron_p,positron_theta);  
 
-            //------ENERGY CORRECTION ELECTRON------------
-              positron_E_recon=positron_energy+positron_photonE;
-              positron_px_recon=positron_px*(positron_E_recon/positron_energy);
-              positron_py_recon=positron_py*(positron_E_recon/positron_energy);
-              positron_pz_recon=positron_pz*(positron_E_recon/positron_energy);
-              TLorentzVector pos(positron_px_recon,positron_py_recon,positron_pz_recon,positron_E_recon);
+        h_electron_ECin_vs_PCAL->Fill(electron_pcal_energy/electron_p,electron_ecin_energy/electron_p);
+        h_positron_EC_vs_PCAL->Fill(positron_pcal_energy/positron_p,(positron_ecin_energy+positron_ecout_energy)/positron_p);
+        if(version==-18||version==-19)
+          h_electron_zvertex->Fill(electron_vz);
+        else
+          h_electron_zvertex->Fill(positron_vz);
+        h_vertex_timediff->Fill(electron_vt-positron_vt);
 
-              TLorentzVector pro(proton_px,proton_py,proton_pz,proton_energy);
+        //------ENERGY CORRECTION ELECTRON------------
+        electron_E_recon=electron_energy+electron_photonE;
+        electron_px_recon=electron_px*(electron_E_recon/electron_energy);
+        electron_py_recon=electron_py*(electron_E_recon/electron_energy);
+        electron_pz_recon=electron_pz*(electron_E_recon/electron_energy);
+        TLorentzVector ele(electron_px_recon,electron_py_recon,electron_pz_recon,electron_E_recon);
 
-              miss=(beam+target)-(pos+ele+pro);
-              invariant_ee=(pos+ele);
-              Q2=2*Beam_E*(miss.P()-miss.Pz());
+        //------ENERGY CORRECTION ELECTRON------------
+        positron_E_recon=positron_energy+positron_photonE;
+        positron_px_recon=positron_px*(positron_E_recon/positron_energy);
+        positron_py_recon=positron_py*(positron_E_recon/positron_energy);
+        positron_pz_recon=positron_pz*(positron_E_recon/positron_energy);
+        TLorentzVector pos(positron_px_recon,positron_py_recon,positron_pz_recon,positron_E_recon);
 
-              h_mm_vs_invariantmass_t->Fill(invariant_ee.M(),miss.M2());
+        //Proton vector
+        TLorentzVector pro(proton_px,proton_py,proton_pz,proton_energy);
 
-              Double_t sumE,sumP;
-              sumE=pos.E()+ele.E()+pro.E();
-              sumP=pos.Pz()+ele.Pz()+pro.Pz();
-
-              h_sum_cut->Fill(invariant_ee.M(),sumE-sumP-0.938);
-
-
-              invariantMass=invariant_ee.M();
-              MM=miss.M2();
-              //t=-(pro-target)*(pro-target);
-              t=2*0.938(pro.E()-0.938);
-              EPcut=sumE-sumP-0.938;
-              Egamma=sumE-0.938;
-              score_e=score_ele;
-              score_p=score_pos;
-              
-              //Add Helicity
-              if(run_number!=run_hel){
-                cout<<"Warning: run_number "<<run_number<<" is different from run_hel "<<run_hel<<endl;
-                cout<<"Helicity for this event will be set to zero!"<<endl;
-                helicity=0;
-              }
-              else if(event_number!=event_hel){
-                cout<<"Warning: event_number "<<event_number<<" is different from event_hel "<<event_hel<<endl;
-                cout<<"Helicity for this event will be set to zero!"<<endl;
-                helicity=0;
-              }
-              else{
-                helicity=hel_hel;
-              }
+        Double_t sumE,sumP;
+        sumE=pos.E()+ele.E()+pro.E();
+        sumP=pos.Pz()+ele.Pz()+pro.Pz();
 
 
-              results->Fill();
+        //Missing mass
+        miss=(beam+target)-(pos+ele+pro);
+        MM=miss.M2();
+        //Invariant Mass
+        invariant_ee=(pos+ele);
+        invariantMass=invariant_ee.M();
+        //Q2
+        Q2=2*Beam_E*(miss.P()-miss.Pz());
+        //t
+        t=2*0.938*(pro.E()-0.938);
+        //EP
+        EPcut=sumE-sumP-0.938;
+        //Egamma
+        Egamma=sumE-0.938;
+        //lepton score
+        score_e=score_ele;
+        score_p=score_pos;
+        //lepton score 6
+        score_e_6=score_ele_6;
+        score_p_6=score_pos_6;
+        //helicity
+        //helicity=0;
 
+        rn=run_number;
+        ev=event_number;
 
-              if((sumE-sumP-0.938)<-0.030)//above -0.025
-                continue;
+       results->Fill();
 
-              if(abs(miss.M2())>0.4)
-                continue;
-
-              h_qq_vs_invariantmass->Fill(invariant_ee.M(),Q2);
-
-              //if(Q2>0.5)
-                //continue;
-
-              h_Invariant->Fill(invariant_ee.M());
-
-              //if(invariant_ee.M()>2.9 && helicity==0)
-                //cout<<"Run "<<run_hel<<" event "<<event_hel<<endl;
-
-          }//abs(electron_vt-positron_vt)<=1
-        }//electronAccepted && positronAccepted && protonAccepted
-      }//number_protons==
+      }//number_protons==1
     }//End for "Runs"
 
     //fclose(f_results);
 
     file2->Write();
 
-    printf("\n Total runs: %d \n",count_runs);
 
-  
+    TCanvas *can = new TCanvas("can","canvas",1200,700);
+
+    /*can->Divide(2,2);
+
+    can->cd(1);
+    h_electron_ECin_vs_PCAL->Draw("colz");
+
+    can->cd(2);
+    h_positron_EC_vs_PCAL->Draw("colz");
+
+    can->cd(3);
+    h_electron_zvertex->Draw();
+
+    can->cd(4);
+    gPad->SetLogy();
+    h_vertex_timediff->Draw();
+    
+    can->Print((nameFile+outFile+".png").c_str());
+    */
+
+   gStyle->SetOptStat(0);
+    h_theta_vs_p->Draw("colz");
+    can->Print("thetavsp.png");
+
+    
 
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = finish - start;

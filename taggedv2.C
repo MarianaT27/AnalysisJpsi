@@ -13,17 +13,12 @@
 #include <TCanvas.h>
 #include <TBenchmark.h>
 #include "hipo4/reader.h"
-#include <iguana/algorithms/clas12/FTEnergyCorrection/Algorithm.h>
 #include "clas12reader.h"
 #include "TMVA/Tools.h"
 #include "TMVA/Reader.h"
 #include "TMVA/MethodCuts.h"
 
 using namespace TMVA;
-
-// QADB header and namespace
-#include "QADB.h"
-using namespace QA;
 
 struct cartesian {
 
@@ -85,33 +80,14 @@ struct particl {
 
 };
 
-string Name_file(string nameFile,int PASS=2, bool QA=true){
-    string corrections,QA_s;
-    if(PASS==0)
-        corrections="_FTcorrON_";
-    else if(PASS==1)
-        corrections="_FTpass1_";
-    else
-        corrections="";
 
 
-    if(!QA)
-        QA_s="_QAOFF_";
-    else
-        QA="";
-    
-    return nameFile+corrections+QA_s;
-}
-
-
-
-int taggedfromroot(string nameFile="S19", int version=-19, double Beam_E=10.2, int PASS=2, bool QA=true) {
+int taggedv2(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, int PASS=1, int max=0, int train=0) {
     // Record start time
     auto start = std::chrono::high_resolution_clock::now();
     //********************************
     //DECLARATION OF VARIABLES
     //********************************
-    int max;
     //MISSING MOMENTUM AND INVARIANT MASS
     TLorentzVector miss;
     TLorentzVector invariant_ee;
@@ -186,17 +162,55 @@ int taggedfromroot(string nameFile="S19", int version=-19, double Beam_E=10.2, i
     bool electronAccepted, positronAccepted;
 
 
-
+    //:::::::::::::::::::TMVA::::::::::::::::::::::
+    //********************************************
+     //TMVA::Reader *readerTMVA = new TMVA::Reader( "!Color:!Silent" );
      Double_t score_pos,score_ele;
-      Double_t score_pos_6,score_ele_6,score_e_6,score_p_6;
+    /* int model=9;
+    // Create a set of variables and declare them to the reader
+     Float_t P, Theta, Phi, PCAL,ECIN,ECOUT;
+     Float_t m2PCAL=-1;
+     Float_t m2ECIN=-1;
+     Float_t m2ECOUT=-1;
+     Float_t Nphe;
 
+     
+    readerTMVA->AddVariable( "P",&P );
+    readerTMVA->AddVariable( "Theta",&Theta);
+    readerTMVA->AddVariable( "Phi",&Phi);
+     //readerTMVA->AddVariable( "Nphe",&Nphe);
+     readerTMVA->AddVariable( "SFPCAL",&PCAL);
+     readerTMVA->AddVariable( "SFECIN",&ECIN);
+    readerTMVA->AddVariable( "SFECOUT",&ECOUT );
+    readerTMVA->AddVariable( "m2PCAL",&m2PCAL);
+    readerTMVA->AddVariable( "m2ECIN",&m2ECIN);
+    readerTMVA->AddVariable( "m2ECOUT",&m2ECOUT);
 
+    //Book Methods
+    TString weightfile_pos; 
+    TString weightfile_ele;
+    if(version==-19){
+        weightfile_ele= "/lustre19/expphy/volatile/clas12/mtenorio/weights/S19neg/TMVAClassification_BDT.weights.xml";
+        weightfile_pos= "/lustre19/expphy/volatile/clas12/mtenorio/weights/S19pos/TMVAClassification_BDT.weights.xml";
+    
+    }
+    if(version==-18){
+        weightfile_ele= "/lustre19/expphy/volatile/clas12/mtenorio/weights/F18inneg/TMVAClassification_BDT.weights.xml";
+        weightfile_pos= "/lustre19/expphy/volatile/clas12/mtenorio/weights/F18inpos/TMVAClassification_BDT.weights.xml";
+    }
+    if(version==+18){
+        weightfile_ele= "/lustre19/expphy/volatile/clas12/mtenorio/weights/F18outneg/TMVAClassification_BDT.weights.xml";
+        weightfile_pos= "/lustre19/expphy/volatile/clas12/mtenorio/weights/F18outpos/TMVAClassification_BDT.weights.xml";
+
+    }
+    readerTMVA->BookMVA( "BDT pos method", weightfile_pos );
+    readerTMVA->BookMVA( "BDT ele method", weightfile_ele );*/
 
     //EVENT SELECTION
     TH2F* h_electron_ECin_vs_PCAL = new TH2F("h_electron_ECin_vs_PCAL","Electron SF-ECin vs. SF-PCAL; SF_{PCAL};SF_{ECIN}",200,0.0,0.3,100,0.0,0.2);
     TH2F* h_positron_EC_vs_PCAL = new TH2F("h_positron_EC_vs_PCAL","Positrons SF-EC vs. SF-PCALSF_{PCAL};SF_{EC}",200,0.0,0.3,100,0.0,0.2);
     TH1F* h_electron_zvertex = new TH1F("h_electron_zvertex","z-vertex distribution electron;z-vertex,cm",200,-15,35);
-    TH1F* h_vertex_timediff = new TH1F("h_vertex_timediff","vertex time difference e- e+ ; vt_e^- - vt_e^+, ns",120,-2,2);
+    TH1F* h_vertex_timediff = new TH1F("h_vertex_timediff","vertex time difference e- e+ ; vt_e^- - vt_e^+, ns",120,-5,5);
 
     //Photon energy correction
     TH2D* h_delta_theta_vs_phi_positron;
@@ -227,7 +241,6 @@ int taggedfromroot(string nameFile="S19", int version=-19, double Beam_E=10.2, i
    ////weitghs /lustre19/expphy/volatile/clas12/mtenorio/weights
 
     TString root_file = "/w/hallb-scshelf2102/clas12/mtenorio/Analysis/"+nameFile+".root";
-    //TString root_file = "/volatile/clas12/mtenorio/Root/"+nameFile+".root";
     TFile *file = new TFile(root_file,"READ");
     TTree *tree = (TTree*)file->Get("analysis");
 
@@ -261,9 +274,6 @@ int taggedfromroot(string nameFile="S19", int version=-19, double Beam_E=10.2, i
     tree->SetBranchAddress("electron_sfpcal",&electron_sfpcal);
     tree->SetBranchAddress("electron_sfecout",&electron_sfecout);
     tree->SetBranchAddress("score_ele",&score_ele);
-
-    tree->SetBranchAddress("score_ele_6",&score_ele_6);
-    tree->SetBranchAddress("score_pos_6",&score_pos_6);
 
     
     tree->SetBranchAddress("positron_p",&positron_p);
@@ -307,39 +317,9 @@ int taggedfromroot(string nameFile="S19", int version=-19, double Beam_E=10.2, i
     tree->SetBranchAddress("R",&R);
     tree->SetBranchAddress("FT_vtFcal",&FT_vtFcal);
     tree->SetBranchAddress("FT_vt",&FT_vt);
-    int electron_sec,positron_sec,electronFT_sec;
-    //tree->SetBranchAddress("electron_sec",&electron_sec);
-    //tree->SetBranchAddress("positron_sec",&positron_sec);
-    //tree->SetBranchAddress("electronFT_sec",&electronFT_sec);
 
     h_delta_theta_vs_phi_positron=(TH2D*)file->Get("h_delta_theta_vs_phi_positron");
     h_delta_theta_vs_phi_electron=(TH2D*)file->Get("h_delta_theta_vs_phi_electron");
-
-    //--------SET OUT ROOT file---------
-    
-    TString out_file_name=Name_file(nameFile,PASS,QA);
-    TString out_file="/lustre19/expphy/volatile/clas12/mtenorio/Root/"+out_file_name+".root";
-
-    TFile *file2 = new TFile(out_file,"RECREATE");
-    TTree *results = new TTree("results",out_file);
-
-    Double_t invariantMass ,MM, Egamma,score_p,score_e,time_ee;
-    results->Branch("invariantMass",&invariantMass,"invariantMass/d");
-    results->Branch("Q2",&Q2,"Q2/d");
-    results->Branch("MM",&MM,"MM/d");
-    results->Branch("time_ee",&time_ee,"time_ee/d");
-    results->Branch("Egamma",&Egamma,"Egamma/d");
-    results->Branch("W",&W,"W/d");
-    results->Branch("score_e",&score_e,"score_e/d");
-    results->Branch("score_p",&score_p,"score_p/d");
-    results->Branch("score_e_6",&score_e_6,"score_e_6/d");
-    results->Branch("score_p_6",&score_p_6,"score_p_6/d");
-
-    gSystem->Load("libIguanaAlgorithms");
-
-    iguana::clas12::FTEnergyCorrection algo_correction;
-
-    algo_correction.Start();
 
 
     //ANALYSIS
@@ -347,11 +327,6 @@ int taggedfromroot(string nameFile="S19", int version=-19, double Beam_E=10.2, i
 
     //f_results = fopen(("/lustre19/expphy/volatile/clas12/mtenorio/"+nameFile+"_dat.txt").c_str(), "w");
 
-     /////////Instanciate QADB///////////
-    QADB *qa = new QADB();
-    //Variables 
-    int count_runs=0;
-    int past_run;
 
     //Start
     for(int fc=0;fc<tree->GetEntries();fc++) {//Run 5032 to 5419 // 6616 6783
@@ -359,24 +334,16 @@ int taggedfromroot(string nameFile="S19", int version=-19, double Beam_E=10.2, i
         positronAccepted=false;
         tree->GetEntry(fc);
 
-        //If QA is active, then apply it
-      if(QA){
-        bool Keep_event = true;
-        if(run_number==5442||run_number==6749)
-          continue;
 
-        Keep_event = qa->OkForAsymmetry(run_number, event_number);
-        int bad_runs[] = {5610, 5615, 6631, 6757};
-        bool Additional_bad_runs = false;
-        Additional_bad_runs = (std::find(std::begin(bad_runs), std::end(bad_runs), run_number) != std::end(bad_runs));
+    
 
-        if (!Keep_event || Additional_bad_runs)
-          continue;
-      }
-
+        if(score_pos<-0.06)
+            continue;
+        if(score_ele<-0.06)
+           continue;
            
         //---------CUTS FOR ELECTRON---------
-        if(electron_pcal_energy>0.07  && electron_p>1.95 && electron_p<beam.E()&& electron_pcal_v>9 && electron_pcal_w>9){
+        if(electron_pcal_energy>0.07  && electron_p>1.7 && electron_p<beam.E()&& electron_pcal_v>9 && electron_pcal_w>9){
             if(version==-18||version==-19){
                 h_electron_zvertex->Fill(electron_vz);
                 if(electron_vz>-8 && electron_vz<4){
@@ -390,7 +357,7 @@ int taggedfromroot(string nameFile="S19", int version=-19, double Beam_E=10.2, i
             }
         }
         //----------CUTS FOR POSITRON---------
-        if(positron_pcal_energy>0.07  && positron_p>1.95 && abs(positron_chi2pid)<5 && positron_pcal_v>9&& positron_pcal_w>9){//
+        if(positron_pcal_energy>0.07  && positron_p>1.7 && abs(positron_chi2pid)<5 && positron_pcal_v>9&& positron_pcal_w>9){//
             if(((positron_ecin_energy+positron_ecout_energy)/positron_p)>=(0.195-positron_pcal_energy/positron_p)){
                 //h_positronsCUTS->Fill(positron_p);
                 if(version==+18){
@@ -434,30 +401,18 @@ int taggedfromroot(string nameFile="S19", int version=-19, double Beam_E=10.2, i
 
                 if(N_FT==1){
 
-                    FT_E_new=FT_E;
 
                     //NOT USE IN PASS2
                     if(PASS==1){
                         FT_E_new=-0.03689 + (1.1412*FT_E) - (0.04316*pow(FT_E,2))+ (0.007046*pow(FT_E,3))- (0.0004055*pow(FT_E,4));
-                        FT_Px_new=FT_Px*(FT_E_new/FT_E);
-                        FT_Py_new=FT_Py*(FT_E_new/FT_E);
-                        FT_Pz_new=FT_Pz*(FT_E_new/FT_E);
-                    }
-                    else if (PASS==0){
-                        auto FT_4vect = algo_correction.Transform(FT_Px,FT_Py,FT_Pz,FT_E);
-                        FT_Px_new=std::get<0>(FT_4vect);
-                        FT_Py_new=std::get<1>(FT_4vect);
-                        FT_Pz_new=std::get<2>(FT_4vect);
-                        FT_E_new=std::get<3>(FT_4vect);
                     }
                     else{
                         FT_E_new=FT_E;
-                        FT_Px_new=FT_Px*(FT_E_new/FT_E);
-                        FT_Py_new=FT_Py*(FT_E_new/FT_E);
-                        FT_Pz_new=FT_Pz*(FT_E_new/FT_E);
                     }
 
-                    
+                    FT_Px_new=FT_Px*(FT_E_new/FT_E);
+                    FT_Py_new=FT_Py*(FT_E_new/FT_E);
+                    FT_Pz_new=FT_Pz*(FT_E_new/FT_E);
 
                     //set variables
                     electronFT_vec.SetPxPyPzE(FT_Px_new,FT_Py_new,FT_Pz_new,FT_E_new);
@@ -486,21 +441,9 @@ int taggedfromroot(string nameFile="S19", int version=-19, double Beam_E=10.2, i
 
                     h_vertex_timediff_FT_FD->Fill(electron_vt-FT_vt);//------PLOT-------
 
-                    invariantMass=invariant_ee.M();
-                    MM=miss.M();
-                    Egamma=E_photon;
-                    score_e=score_ele;
-                    score_p=score_pos;
-                    
-                    time_ee=electron_vt-FT_vt;
-                    results->Fill();
-
-
-                   
-
 
                     //MM vs IM
-                    if((time_ee)<=2 && (time_ee)>=-2){
+                    if((electron_vt-FT_vt)<=2.5 && (electron_vt-FT_vt)>=-2.5){
                         h_mm_vs_invariantmass_t->Fill(invariant_ee.M(),miss.M());
                         h_MM->Fill(miss.M());
                         if(0.7 <=miss.M() &&  miss.M()<= 1.3){//1 sigmas 0.65 <=miss.M() &&  miss.M()<= 1.3
@@ -527,13 +470,9 @@ int taggedfromroot(string nameFile="S19", int version=-19, double Beam_E=10.2, i
     }//End for "Runs"
 
     //fclose(f_results);
-
-    algo_correction.Stop();
-
-    file2->Write();
    
     TCanvas *can = new TCanvas("can","canvas",200,10,700,700);
-    TString pdf_original="./R_Tagged/"+out_file_name+".pdf";
+    string pdf_original=nameFile+".pdf";
 
     can->Divide(2,2);
 
@@ -550,7 +489,7 @@ int taggedfromroot(string nameFile="S19", int version=-19, double Beam_E=10.2, i
     gPad->SetLogy();
     h_vertex_timediff->Draw();
 
-    can->Print(pdf_original + "(");
+    can->Print( (pdf_original + "(").c_str());
 
     can->Clear();
     can->Divide(2,2);
@@ -565,7 +504,7 @@ int taggedfromroot(string nameFile="S19", int version=-19, double Beam_E=10.2, i
     can->cd(4);
     gPad->SetLogy();
     h_positron_photons->Draw();
-    can->Print(pdf_original + "(");
+    can->Print( (pdf_original + "(").c_str());
 
 
     can->Clear();
@@ -577,33 +516,33 @@ int taggedfromroot(string nameFile="S19", int version=-19, double Beam_E=10.2, i
     can->cd(2);
     gPad->SetLogy();
     h_vertex_timediff_FT_FD->Draw();
-    can->Print(pdf_original + "(");
+    can->Print( (pdf_original + "(").c_str());
 
     can->Clear();
     gPad->SetLogy(0);
 
     h_MM->Draw();
-    can->Print(pdf_original + "(");
+    can->Print( (pdf_original + "(").c_str());
 
 
     h_mm_vs_invariantmass_t->Draw("colz");
-    can->Print(pdf_original + "(");
+    can->Print( (pdf_original + "(").c_str());
 
     h_mm_vs_invariantmass_no_t->Draw("colz");
-    can->Print(pdf_original + "(");
+    can->Print( (pdf_original + "(").c_str());
 
 
     h_Invariant->Draw();
-    can->Print(pdf_original + "(");
+    can->Print( (pdf_original + "(").c_str());
 
     h_W->Draw();
-    can->Print( pdf_original + "(");
+    can->Print( (pdf_original + "(").c_str());
 
     h_Q2->Draw();
-    can->Print(pdf_original + "(");
+    can->Print( (pdf_original + "(").c_str());
 
     h_Q2_jpsievents->Draw();
-    can->Print( pdf_original + ")");
+    can->Print( (pdf_original + ")").c_str());
 
 
     auto finish = std::chrono::high_resolution_clock::now();

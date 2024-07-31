@@ -14,7 +14,6 @@
 #include <TBenchmark.h>
 #include "hipo4/reader.h"
 #include "clas12reader.h"
-#include <iguana/algorithms/clas12/SectorFinder/Algorithm.h>
 
 #define ADDVAR(x, name, t, tree) tree->Branch(name, x, TString(name) + TString(t))
 
@@ -76,49 +75,25 @@ struct particl {
   int pid;
   double vtime;
   double E;
-  int sector;
 
 };
 
 
-iguana::clas12::SectorFinder algo_sector_finder;
 
-
-int Find_Sector(hipo::banklist& banks,int pindex){
-    
-    //bank is Cal, track,scin
-    int trackSector = 0;
-    if(banks[1].getRowList().size() > 0) {
-      trackSector = algo_sector_finder.GetSector(banks[1], pindex);
-    }
-
-    int scintSector = 0;
-    if(banks[2].getRowList().size() > 0) {
-        scintSector = algo_sector_finder.GetSector(banks[2], pindex);
-    }
-
-    int calSector = 0;
-    if(banks[0].getRowList().size() > 0) {
-        calSector = algo_sector_finder.GetSector(banks[0], pindex);
-    }
-
-    if(trackSector != 0) {
-        return trackSector;
-    }
-    else if(scintSector != 0) {
-        return scintSector;
-    }
-    else{
-        return calSector;
-    }
-
-}
-
-
-
-int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, int PASS=1, int max=0,string ext="",int job=7772) {
+int Hipo_Analysis() {
     // Record start time
     auto start = std::chrono::high_resolution_clock::now();
+
+    Int_t argc = gApplication->Argc();
+	char **argv = gApplication->Argv();
+
+	TString output_file = TString(argv[argc - 1]);
+	cout<<"Outputting on "<<output_file<<"\n";
+
+
+    Double_t Beam_E=10.6;
+
+
     //********************************
     //FALL 10.6
     //SPRING 10.2
@@ -159,11 +134,6 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
     int positron_photon;
     Double_t electron_photonE;
     Double_t positron_photonE;
-
-
-    //
-    int electron_sec, positron_sec,electronFT_sec;
-
     TH2F* h_delta_theta_vs_phi_positron = new TH2F("h_delta_theta_vs_phi_positron","#Delta#phi vs #Delta#theta e^{+}",200,-10,10,150,-30,30);
     TH2F* h_delta_theta_vs_phi_electron = new TH2F("h_delta_theta_vs_phi_electron","#Delta#phi v #Delta#theta e^{-}",200,-10,10,150,-30,30);
     
@@ -198,8 +168,8 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
     int number_protons;
     int JPSI=0;
 
-
-    TString root_file = "/lustre19/expphy/volatile/clas12/mtenorio/Root/"+nameFile+".root";
+/*
+    TString root_file = "/lustre19/expphy/volatile/clas12/mtenorio/Root/"+output_file+".root";
     TFile *file = new TFile(root_file,"RECREATE");
     TTree *analysis = new TTree("analysis",root_file);
 
@@ -207,10 +177,6 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
     analysis->Branch("run_number",&run_number,"run_number/i");
     analysis->Branch("event_number",&event_number,"event_number/i");
     analysis->Branch("helicity",&helicity,"helicity/I");
-
-    analysis->Branch("electron_sec",&electron_sec,"electron_sec/I");
-    analysis->Branch("positron_sec",&positron_sec,"positron_sec/I");
-    analysis->Branch("electronFT_sec",&electronFT_sec,"electronFT_sec/I");
 
     analysis->Branch("number_of_electrons",&number_of_electrons,"number_of_electrons/i");
     analysis->Branch("electron_p",&electron_p,"electron_p/d");
@@ -295,94 +261,14 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
     analysis->Branch("FT_vtFcal",&FT_vtFcal,"FT_vtFcal/d");
     analysis->Branch("FT_vt",&FT_vt,"FT_vt/d");
 
-    //analysis->Branch("score_pos",&score_pos,"score_pos/d");
-    //analysis->Branch("score_ele",&score_ele,"score_ele/d");
+    analysis->Branch("score_pos",&score_pos,"score_pos/d");
+    analysis->Branch("score_ele",&score_ele,"score_ele/d");
 
-    //----------------PASS 1 run list-----------------------------------------
-
-                         //  1    2     3     4     5    6      7     8    9     10    11    12    13    14   15
-    int Inbending18[146] ={5036, 5038, 5039, 5040, 5041, 5043, 5045, 5046, 5047, 5051, 5052, 5053, 5116, 5117,//3
-                          5119, 5120, 5124, 5125, 5126, 5127, 5128, 5129, 5130, 5137, 5139, 5153, 5158, 5159, 5162,//4
-                          5163, 5165, 5166, 5167, 5168, 5169, 5180, 5181, 5182, 5183, 5190, 5191, 5193, 5194, 5195,//5
-                          5196, 5197, 5198, 5199, 5200, 5201, 5202, 5204, 5205, 5206, 5208, 5211, 5212, 5215, 5216,//6
-                          5219, 5220, 5221, 5222, 5223, 5230, 5231, 5232, 5233, 5234, 5235, 5237, 5238, 5247, 5248,//7
-                          5249, 5250, 5252, 5253, 5257, 5258, 5259, 5261, 5262, 5303, 5304, 5305, 5306, 5307, 5310,//8
-                          5311, 5315, 5317, 5318, 5319, 5320, 5324, 5325, 5333, 5334, 5339, 5341, 5342, 5343, 5344,//9
-                          5345, 5346, 5347, 5349, 5351, 5354, 5355, 5356, 5357, 5358, 5359, 5360, 5361, 5362, 5366,//10
-                          5367, 5368, 5369, 5372, 5373, 5374, 5375, 5376, 5377, 5378, 5379, 5380, 5381, 5383, 5386,//11
-                          5390, 5391, 5392, 5393, 5394, 5398, 5400, 5401, 5403, 5404, 5406, 5407};
-
-
-   int Outbending18[157]={5666, 5665, 5664, 5663, 5662, 5656, 5655, 5654, 5652, 5651, 5650, 5649, 5648, 5647, 5646,
-                          5645, 5644, 5643, 5641, 5639, 5638, 5637, 5635, 5633, 5632, 5631, 5630, 5629, 5628, 5626,
-                          5625, 5624, 5623, 5621, 5619, 5618, 5616, 5615, 5614, 5613, 5612, 5611, 5607, 5606, 5603,
-                          5602, 5601, 5598, 5597, 5594, 5592, 5591, 5578, 5577, 5574, 5573, 5572, 5571, 5570, 5569,
-                          5567, 5562, 5561, 5559, 5558, 5557, 5556, 5555, 5554, 5552, 5551, 5550, 5549, 5548, 5547,
-                          5546, 5545, 5544, 5543, 5541, 5540, 5538, 5537, 5536, 5535, 5534, 5533, 5532, 5530, 5528,
-                          5527, 5526, 5525, 5524, 5523, 5522, 5521, 5520, 5519, 5518, 5517, 5516, 5507, 5505, 5500,
-                          5499, 5498, 5497, 5487, 5486, 5485, 5483, 5482, 5481, 5480, 5479, 5478, 5476, 5475, 5474,
-                          5473, 5472, 5471, 5470, 5469, 5468, 5467, 5466, 5465, 5464, 5460, 5456, 5455, 5454, 5453,
-                          5452, 5451, 5450, 5449, 5448, 5447, 5445, 5441, 5440, 5438, 5437, 5436, 5435, 5434, 5432,
-                          5430, 5429, 5426, 5425, 5424, 5423};
-
-    int Spring19[114] = {6619, 6620, 6631, 6632, 6636, 6637, 6638, 6639, 6640, 6642, 6645, 6647, 6648, 6650, 6651,
-                          6652, 6654, 6655, 6656, 6657, 6658, 6660, 6661, 6662, 6663, 6664, 6665, 6666, 6667, 6668,
-                          6669, 6670, 6672, 6673, 6675, 6676, 6677, 6678, 6680, 6682, 6683, 6684, 6685, 6687, 6688,
-                          6689, 6691, 6692, 6693, 6694, 6695, 6696, 6697, 6698, 6699, 6704, 6705, 6706, 6707, 6708,
-                          6709, 6710, 6711, 6712, 6713, 6714, 6715, 6716, 6717, 6718, 6719, 6728, 6729, 6730, 6731,
-                          6732, 6733, 6734, 6736, 6737, 6738, 6739, 6740, 6741, 6742, 6743, 6744, 6746, 6747, 6748,
-                          6749, 6750, 6753, 6754, 6755, 6756, 6757, 6759, 6760, 6762, 6763, 6764, 6765, 6767, 6768,
-                          6769, 6775, 6776, 6777, 6778, 6779, 6780, 6781, 6783};
-
-    //----------------PASS 2 run list-----------------------------------------
-
-    int F18in_P2[170] =  {                        5032, 5036, 5038, 5039, 5040, 5041, 5043, 5045, 5046, 5047, 5051, //11
-                          5052, 5053, 5116, 5117, 5119, 5120, 5124, 5125, 5126, 5127, 5128, 5129, 5130, 5137, 5138, //26
-                          5139, 5153, 5158, 5159, 5160, 5162, 5163, 5164, 5165, 5166, 5167, 5168, 5169, 5180, 5181, //41
-                          5182, 5183,       5190, 5191, 5193, 5194, 5195, 5196, 5197, 5198, 5199, 5200, 5201, 5202, //55
-                          5203, 5204, 5205, 5206, 5208, 5211, 5212, 5215, 5216, 5219, 5220, 5221, 5222, 5223, 5225, //70
-                          5229, 5230, 5231, 5232, 5233, 5234, 5235,       5237, 5238, 5239, 5247, 5248, 5249, 5250, //84
-                          5252, 5253, 5257, 5258, 5259, 5261, 5262, 5300, 5301, 5302, 5303, 5304, 5305, 5306, 5307, //99
-                          5310, 5311, 5315, 5316, 5317, 5318, 5319, 5320, 5323, 5324, 5325, 5333, 5334, 5335, 5336, //115
-                          5339, 5340, 5341, 5342, 5343, 5344, 5345, 5346, 5347, 5349, 5351, 5354, 5355, 5356, 5357, //129
-                          5358, 5359, 5360, 5361, 5362, 5366, 5367, 5368, 5369, 5370, 5371, 5372, 5373, 5374, 5375, //144
-                          5376, 5377, 5378,       5380, 5381, 5382, 5383, 5386, 5390, 5391, 5392, 5393, 5398,       //157
-                          5400, 5401, 5402, 5403, 5404, 5406, 5407, 5414, 5415, 5416, 5417, 5418, 5419};            //170
-                          //MISSING: 5026, 5027, 5030, 5031, 5189, 5236, 5379, 5399
-
-
-    int F18out_P2[180]  = {      5423, 5424, 5425, 5426, 5428, 5429, 5430, 5431, 5432,      5435, 5436, 5437, 5438, //14
-                          5439, 5440, 5441, 5442, 5443, 5444, 5445, 5447, 5448, 5449, 5450, 5451, 5452, 5453, 5454, //29
-                          5455, 5456, 5457, 5460, 5462, 5464, 5465, 5466, 5467, 5468, 5469, 5470, 5471, 5472, 5473, //44
-                          5474, 5475, 5476, 5478, 5479, 5481, 5482, 5483, 5485, 5486, 5487, 5495, 5496, 5497, 5498, //59
-                          5499, 5500, 5504, 5505, 5507, 5516, 5517, 5518, 5519, 5520, 5521, 5522, 5523, 5524, 5525, //74
-                          5526, 5527, 5528, 5530, 5532, 5533, 5534, 5535, 5536, 5537, 5538, 5540, 5541, 5542, 5543, //89
-                          5544, 5545, 5546, 5547, 5548, 5549, 5550, 5551, 5552, 5554, 5555, 5556, 5557, 5558, 5559, //104
-                          5561, 5562, 5564, 5565, 5566, 5567, 5569, 5570, 5571, 5572, 5573, 5574, 5577, 5578,       //118
-                                5586, 5589, 5590, 5591, 5592, 5594, 5595, 5597, 5598, 5600, 5601, 5602, 5603, 5604, //132
-                          5606, 5607,       5610, 5611, 5612, 5613, 5614, 5615, 5616, 5617, 5618, 5619, 5620, 5621, //146
-                          5623, 5624, 5625, 5626, 5627, 5628, 5629, 5630, 5631, 5632, 5633,       5635, 5637, 5638, //161
-                          5639, 5641, 5643, 5644, 5645, 5646, 5647, 5648, 5649, 5650, 5651, 5652, 5654, 5655, 5656, //176
-                          5662, 5663, 5664, 5665, 5666};                                                            //181
-                          //MISSING: 5422, 5581, 5584, 5609  ADD: 5480
-
-     
-
-    int S19_P2[120]  =   {6616, 6618, 6619, 6620, 6631, 6632, 6636, 6637, 6638, 6639, 6640, 6642, 6645, 6647, 6648, //15
-                          6650, 6651, 6652, 6654, 6655, 6656, 6657, 6658, 6660, 6661, 6662, 6663, 6664, 6665, 6666, //30
-                          6667, 6668, 6669, 6670, 6672, 6673, 6675, 6676, 6677, 6678, 6680, 6682, 6683, 6684, 6685, //45
-                          6687, 6688, 6689, 6691, 6692, 6693, 6694, 6695, 6696, 6697, 6698, 6699, 6704, 6705, 6706, //60
-                          6707, 6708, 6709, 6710, 6711, 6712, 6713, 6714, 6715, 6716, 6717, 6718, 6719, 6722, 6723, //75
-                          6724, 6725, 6728, 6729, 6730, 6731, 6732, 6733, 6734, 6736, 6737, 6738, 6739, 6740, 6741, //90
-                          6742, 6743, 6744, 6746, 6747, 6748, 6749, 6750,       6753, 6754, 6755, 6756, 6757, 6759, //104
-                          6760, 6762, 6763, 6764, 6765, 6767, 6768, 6769, 6775, 6776, 6777, 6778, 6779, 6780, 6781, //119
-                          6783};                                                                                    //120
-                          //MISSING: 6751                                                          
-                
+*/
       //********************************************
     //:::::::::::::::::::TMVA::::::::::::::::::::::
     //********************************************
-     //TMVA::Reader *readerTMVA = new TMVA::Reader( "!Color:!Silent" );
+     TMVA::Reader *readerTMVA = new TMVA::Reader( "!Color:!Silent" );
      int model=9;
     // Create a set of variables and declare them to the reader
      Float_t P, Theta, Phi, PCAL,ECIN,ECOUT;
@@ -392,7 +278,7 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
      Float_t Nphe;
 
      
-    /*readerTMVA->AddVariable( "P",&P );
+    readerTMVA->AddVariable( "P",&P );
     readerTMVA->AddVariable( "Theta",&Theta);
     readerTMVA->AddVariable( "Phi",&Phi);
      //readerTMVA->AddVariable( "Nphe",&Nphe);
@@ -406,87 +292,33 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
     //Book Methods
     TString weightfile_pos; 
     TString weightfile_ele;
-    if(version==-19){
-        weightfile_ele= "/lustre19/expphy/volatile/clas12/mtenorio/weights/S19neg/TMVAClassification_BDT.weights.xml";
-        weightfile_pos= "/lustre19/expphy/volatile/clas12/mtenorio/weights/S19pos/TMVAClassification_BDT.weights.xml";
+   /* if(version==-19){
+        weightfile_ele= "/work/clas12/mtenorio/ML_weights_pass2/S19neg/TMVAClassification_BDT.weights.xml";
+        weightfile_pos= "/work/clas12/mtenorio/ML_weights_pass2/S19pos/TMVAClassification_BDT.weights.xml";
     
-    }
-    if(version==-18){
-        weightfile_ele= "/lustre19/expphy/volatile/clas12/mtenorio/weights/F18inneg/TMVAClassification_BDT.weights.xml";
-        weightfile_pos= "/lustre19/expphy/volatile/clas12/mtenorio/weights/F18inpos/TMVAClassification_BDT.weights.xml";
-    }
-    if(version==+18){
-        weightfile_ele= "/lustre19/expphy/volatile/clas12/mtenorio/weights/F18outneg/TMVAClassification_BDT.weights.xml";
-        weightfile_pos= "/lustre19/expphy/volatile/clas12/mtenorio/weights/F18outpos/TMVAClassification_BDT.weights.xml";
+    }*/
+    //if(version==-18){
+        weightfile_ele= "/work/clas12/mtenorio/ML_weights_pass2/F18inneg/TMVAClassification_BDT.weights.xml";
+        weightfile_pos= "/work/clas12/mtenorio/ML_weights_pass2/F18inpos/TMVAClassification_BDT.weights.xml";
+    //}
+    //if(version==+18){
+        //weightfile_ele= "/work/clas12/mtenorio/ML_weights_pass2/F18outneg/TMVAClassification_BDT.weights.xml";
+        //weightfile_pos= "/work/clas12/mtenorio/ML_weights_pass2/F18outpos/TMVAClassification_BDT.weights.xml";
 
-    }
+    //}
     readerTMVA->BookMVA( "BDT pos method", weightfile_pos );
-    readerTMVA->BookMVA( "BDT ele method", weightfile_ele );*/
-
-    
-    
-
-
-    if(max==0){
-        if(version==-18)
-            max=170;
-        if(version==+18)
-            max=180;
-        if(version==-19)
-            max=120;
-    }
-
-    algo_sector_finder.Start();
+    readerTMVA->BookMVA( "BDT ele method", weightfile_ele );
+    int num_files=0;
 
     //Start
-    for(int fc =1; fc<max; fc++) {//Run 5032 to 5419 // 6616 6783
+    for(int fc =5; fc<(argc - 1); fc++) {//Run 5032 to 5419 // 6616 6783
+        //if(num_files>10)
+          //  break;
 
-        char filename1[500];
+        TString filename1 = TString(argv[fc]);
+        cout<<"Analysis running on "<<filename1<<endl;
+        num_files++;
 
-        if(PASS==1){
-            if(version==-18)
-                sprintf(filename1,"/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass1/v1/dst/train/jpsitcs/jpsitcs_00%d.hipo",F18in_P2[fc]);  //Inbending FALL
-            else if(version==+18)
-                sprintf(filename1,"/cache/clas12/rg-a/production/recon/fall2018/torus+1/pass1/v1/dst/train/jpsitcs/jpsitcs_00%d.hipo",F18out_P2[fc]);  //Outbending FALL
-            else if(version==-19)
-                sprintf(filename1,"/cache/clas12/rg-a/production/recon/spring2019/torus-1/pass1/v1/dst/train/jpsitcs/jpsitcs_00%d.hipo",S19_P2[fc]);  //Inbending SPRING
-
-        }
-        else if(PASS==2){
-          if(version==-18)
-              sprintf(filename1,"/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass2/main/train/jpsitcs/jpsitcs_00%d.hipo",F18in_P2[fc]);
-          else if(version==+18)
-              sprintf(filename1,"/cache/clas12/rg-a/production/recon/fall2018/torus+1/pass2/train/jpsitcs/jpsitcs_00%d.hipo",F18out_P2[fc]); 
-          else if(version==-19)
-            sprintf(filename1,"/cache/clas12/rg-a/production/recon/spring2019/torus-1/pass2/dst/train/jpsitcs/jpsitcs_00%d.hipo",S19_P2[fc]);
-        }
-        else if(PASS==0){ //For OSG
-            if(fc<10)
-                sprintf(filename1,"/volatile/clas12/osg/marianat/job_%d/output/%sep_epjp_00%d-%d-%d.hipo",job,ext.c_str(),fc,job,fc-1);
-            else if(fc<100)
-                sprintf(filename1,"/volatile/clas12/osg/marianat/job_%d/output/%sep_epjp_0%d-%d-%d.hipo",job,ext.c_str(),fc,job,fc-1);
-            else
-                sprintf(filename1,"/volatile/clas12/osg/marianat/job_%d/output/%sep_epjp_%d-%d-%d.hipo",job,ext.c_str(),fc,job,fc-1);
-        }
-        else if(PASS==3){ 
-            //For osg
-            if(fc-1==90)
-                continue;
-
-            sprintf(filename1,"/volatile/clas12/osg/marianat/job_%d/output/%s-%d-%d.hipo",job,ext.c_str(),job,fc-1);
-        }
-        else if(PASS==4){ 
-            //sprintf(filename1,"/volatile/clas12/mtenorio/DC_smearing/MCPhysics/Jpsi/recon/ep_epjp_00%d.hipo",fc);
-            //sprintf(filename1,"/volatile/clas12/mtenorio/DC_smearing/MCPhysics/JPsi%s/recon/ep_epjp_00%d.hipo",ext.c_str(),fc);
-            if(fc<50)
-                sprintf(filename1,"/volatile/clas12/osg/marianat/job_%d/output/%sJpsiGen-%d-%d.hipo",job,ext.c_str(),job,fc-1);
-            else
-                sprintf(filename1,"/volatile/clas12/osg/marianat/job_%d/output/%sJpsiGen-%d-%d.hipo",7780,ext.c_str(),7780,fc-50);
-        }
-
-        
-
-         cout<<"Analysis running on "<<filename1<<endl;
 
         hipo::reader  reader;
         reader.open(filename1);
@@ -504,15 +336,8 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
         hipo::bank PART(factory.getSchema("REC::Particle"));
         hipo::bank FTPART(factory.getSchema("RECFT::Particle"));
         hipo::bank CALO(factory.getSchema("REC::Calorimeter"));
-        hipo::bank SCI(factory.getSchema("REC::Scintillator"));
-        hipo::bank TRK(factory.getSchema("REC::Track"));
         hipo::bank FT(factory.getSchema("REC::ForwardTagger"));
         hipo::bank HEADER(factory.getSchema("RUN::config"));
-
-        hipo::banklist banks = reader.getBanks({
-                                          "REC::Calorimeter",
-                                          "REC::Track",
-                                          "REC::Scintillator"});
 
         int counter = 0;
         while(reader.next()==true ){//Loops all events
@@ -531,8 +356,6 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
             event.getStructure(PART);
             event.getStructure(FTPART);
             event.getStructure(CALO);
-            event.getStructure(SCI);
-            event.getStructure(TRK);
             event.getStructure(FT);
             event.getStructure(HEADER);
 
@@ -586,7 +409,7 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
             bool electronAccepted;
             bool positronAccepted;
 
-            //REC::Particle
+
             for(int i = 0; i < nrows; i++){
                 int   pid = PART.getInt("pid",i);
                 int charge = PART.getByte("charge",i);
@@ -601,7 +424,6 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
                 float chi2pid = PART.getFloat("chi2pid",i);
                 int    status = PART.getInt("status",i);
                 int    index = i;
-                int sector;
                 TLorentzVector particle_vector;
                 particle_vector.SetPxPyPzE(px, py, pz, sqrt(px*px +py*py + pz*pz + 0.0005*0.0005));
 
@@ -621,8 +443,6 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
                         electron.status = status;
                         electron.index = index;
                         electron.chi2pid = chi2pid;
-                        int trackSector = 0;
-                        electron.sector=Find_Sector(banks, index);
                     }
                     //PID -11 Means Positron
                     else if(pid==-11) {
@@ -637,7 +457,6 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
                         positron.status = status;
                         positron.index = index;
                         positron.chi2pid = chi2pid;
-                        positron.sector=Find_Sector(banks, index);
 
                     }
                     else if(pid==2212) {
@@ -669,7 +488,6 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
                     electronFT.status = status;
                     electronFT.index = index;
                     electronFT.chi2pid = chi2pid;
-                    electronFT.sector=Find_Sector(banks, index);
                 }
 
             }
@@ -693,7 +511,7 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
                 }
             }
 
-            
+
 
             //REC::Calorimeter
             for (int i1 = 0; i1 < CALO.getRows(); i1++) {
@@ -740,12 +558,9 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
 
 
             }
-
-
-            //if(partNumber==100) {
                 
                //tagged e+e-
-                if(number_of_electrons==1 &&number_of_positrons==1) {
+                if(number_of_electrons==1&&number_of_positrons==1) {
                     
                     event_number = en;
                     run_number = rn;
@@ -774,7 +589,6 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
                     electron_sfpcal=electron_pcal_energy/electron_p;
                     electron_sfecin=electron_ecin_energy/electron_p;
                     electron_sfecout=electron_ecout_energy/electron_p;
-                    electron_sec=electron.sector;
 
                     positron_pcal_v=positron.responses[109].v;
                     positron_pcal_w=positron.responses[109].w;
@@ -799,18 +613,6 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
                     positron_sfpcal=positron_pcal_energy/positron_p;
                     positron_sfecin=positron_ecin_energy/positron_p;
                     positron_sfecout=positron_ecout_energy/positron_p;
-                    positron_sec=positron.sector;
-
-                    P=positron_p;
-                    Theta=positron_theta/57.2958;
-                    Phi=positron_phi/57.2958;
-                    PCAL=positron_sfpcal;
-                    ECIN=positron_sfecin;
-                    ECOUT=positron_sfecout;
-                    m2PCAL=positron_m2pcal;
-                    m2ECIN=positron_m2ecin;
-                    m2ECOUT=positron_m2ecout;
-                    //score_pos=readerTMVA->EvaluateMVA("BDT pos method");
 
                     P=electron_p;
                     Theta=electron_theta/57.2958;
@@ -821,7 +623,22 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
                     m2PCAL=electron_m2pcal;
                     m2ECIN=electron_m2ecin;
                     m2ECOUT=electron_m2ecout;
-                   // score_ele=readerTMVA->EvaluateMVA("BDT ele method");
+                    score_ele=readerTMVA->EvaluateMVA("BDT ele method");
+                    if(score_ele<0.0)
+                        continue;
+
+                    P=positron_p;
+                    Theta=positron_theta/57.2958;
+                    Phi=positron_phi/57.2958;
+                    PCAL=positron_sfpcal;
+                    ECIN=positron_sfecin;
+                    ECOUT=positron_sfecout;
+                    m2PCAL=positron_m2pcal;
+                    m2ECIN=positron_m2ecin;
+                    m2ECOUT=positron_m2ecout;
+                    score_pos=readerTMVA->EvaluateMVA("BDT pos method");
+                    if(score_pos<0.0)
+                        continue;
 
 
                     proton_p=proton.lorentz.P();
@@ -853,8 +670,7 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
                             photon_vector.SetPxPyPzE(px, py, pz, sqrt(px*px +py*py + pz*pz + 0.0*0.0));
                             h_delta_theta_vs_phi_electron->Fill(photon_vector.Theta()*57.2958-electron_theta,photon_vector.Phi()*57.2958-electron_phi);
                             h_delta_theta_vs_phi_positron->Fill(photon_vector.Theta()*57.2958-positron_theta,photon_vector.Phi()*57.2958-positron_phi);
-                            /*h_delta_phi_vs_p_electron->Fill(electron_p, photon_vector.Phi()*57.2958-electron_phi);
-                            h_delta_phi_vs_p_positron->Fill(positron_p, photon_vector.Phi()*57.2958-positron_phi);*/
+  
                             h_delta_theta_vs_p_electron->Fill(electron_p, photon_vector.Theta()*57.2958-electron_theta);
                             h_delta_theta_vs_p_positron->Fill(positron_p, photon_vector.Theta()*57.2958-positron_theta);
                             
@@ -876,26 +692,120 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
                     FT_Px=electronFT.lorentz.Px();
                     FT_Py=electronFT.lorentz.Py();
                     FT_Pz=electronFT.lorentz.Pz();
-                    electronFT_sec=electronFT.sector;
                     R=sqrt((FT_xFcal*FT_xFcal)+(FT_yFcal*FT_yFcal)+(FT_zFcal*FT_zFcal));
                     FT_vt=FT_vtFcal-(R/29.9792458);
-                    analysis->Fill();
+                    //analysis->Fill();
 
                 }//SELECT THE ELECTRON-POSITRON PAIR
                 
-            //}//If particle
+                /*if(number_of_positrons==1) {
+                    
+                    event_number = en;
+                    run_number = rn;
+
+                    helicity = hel;
+
+                    positron_pcal_v=positron.responses[109].v;
+                    positron_pcal_w=positron.responses[109].w;
+                    positron_pcal_energy = positron.responses[109].energy;
+                    positron_ecin_energy = positron.responses[110].energy;
+                    positron_ecout_energy = positron.responses[111].energy;
+                    positron_vx = positron.vertexinfo.x;
+                    positron_vy = positron.vertexinfo.y;
+                    positron_vz = positron.vertexinfo.z;
+                    positron_vt=positron.vtime;
+                    positron_p = positron.lorentz.P();
+                    positron_px =positron.lorentz.Px();
+                    positron_py =positron.lorentz.Py();
+                    positron_pz =positron.lorentz.Pz();
+                    positron_theta = positron.lorentz.Theta()*57.2958;
+                    positron_phi = positron.lorentz.Phi()*57.2958;
+                    positron_energy = positron.lorentz.E();
+                    positron_chi2pid= positron.chi2pid;
+                    positron_m2pcal=(positron.responses[109].m2u+positron.responses[109].m2v+positron.responses[109].m2w)/3;
+                    positron_m2ecin=(positron.responses[110].m2u+positron.responses[110].m2v+positron.responses[110].m2w)/3;
+                    positron_m2ecout=(positron.responses[111].m2u+positron.responses[111].m2v+positron.responses[111].m2w)/3;
+                    positron_sfpcal=positron_pcal_energy/positron_p;
+                    positron_sfecin=positron_ecin_energy/positron_p;
+                    positron_sfecout=positron_ecout_energy/positron_p;
+
+                    P=positron_p;
+                    Theta=positron_theta/57.2958;
+                    Phi=positron_phi/57.2958;
+                    PCAL=positron_sfpcal;
+                    ECIN=positron_sfecin;
+                    ECOUT=positron_sfecout;
+                    m2PCAL=positron_m2pcal;
+                    m2ECIN=positron_m2ecin;
+                    m2ECOUT=positron_m2ecout;
+                    score_pos=readerTMVA->EvaluateMVA("BDT pos method");
+                    if(score_pos<0.0)
+                        continue;
+
+
+                    proton_p=proton.lorentz.P();
+                    proton_theta=proton.lorentz.Theta()*57.2958;
+                    proton_phi=proton.lorentz.Phi()*57.2958;
+                    proton_px= proton.lorentz.Px();
+                    proton_py= proton.lorentz.Py();
+                    proton_pz= proton.lorentz.Pz();
+                    proton_vx=proton.vertexinfo.x;
+                    proton_vy=proton.vertexinfo.y;
+                    proton_vz=proton.vertexinfo.z;
+                    proton_vt=proton.vtime;
+                    proton_beta=proton.beta;
+                    proton_chi2pid=proton.chi2pid;
+                    proton_energy = proton.lorentz.E();
+
+                    electron_photon=0;
+                    positron_photon=0;
+                    electron_photonE=0;
+                    positron_photonE=0;
+
+                    for(int i = 0; i < PART.getRows(); i++){
+                        float  px = PART.getFloat("px",i);
+                        float  py = PART.getFloat("py",i);
+                        float  pz = PART.getFloat("pz",i);
+                        float beta = PART.getFloat("beta",i);
+                        if(PART.getInt("pid",i)==22  && beta>=0.91 && beta<=1.09) {    //){// 0.94 to 1.06
+                            TLorentzVector photon_vector;
+                            photon_vector.SetPxPyPzE(px, py, pz, sqrt(px*px +py*py + pz*pz + 0.0*0.0));
+                            //h_delta_theta_vs_phi_electron->Fill(photon_vector.Theta()*57.2958-electron_theta,photon_vector.Phi()*57.2958-electron_phi);
+                            h_delta_theta_vs_phi_positron->Fill(photon_vector.Theta()*57.2958-positron_theta,photon_vector.Phi()*57.2958-positron_phi);
+                            //h_delta_phi_vs_p_electron->Fill(electron_p, photon_vector.Phi()*57.2958-electron_phi);
+                            //h_delta_phi_vs_p_positron->Fill(positron_p, photon_vector.Phi()*57.2958-positron_phi);
+                            //h_delta_theta_vs_p_electron->Fill(electron_p, photon_vector.Theta()*57.2958-electron_theta);
+                            h_delta_theta_vs_p_positron->Fill(positron_p, photon_vector.Theta()*57.2958-positron_theta);
+                            
+                            if((abs(photon_vector.Theta()*57.2958-positron_theta)<0.7)){
+                                h_delta_phi_vs_p_positron->Fill(positron_p, photon_vector.Phi()*57.2958-positron_phi);
+                                positron_photonE=positron_photonE+photon_vector.E();
+                                positron_photon++;
+                            }
+                        }
+                    }
+                    
+                    FT_E=electronFT.lorentz.E();
+                    FT_p=electronFT.lorentz.P();
+                    FT_Px=electronFT.lorentz.Px();
+                    FT_Py=electronFT.lorentz.Py();
+                    FT_Pz=electronFT.lorentz.Pz();
+                    R=sqrt((FT_xFcal*FT_xFcal)+(FT_yFcal*FT_yFcal)+(FT_zFcal*FT_zFcal));
+                    FT_vt=FT_vtFcal-(R/29.9792458);
+                    //analysis->Fill();
+
+                }//SELECT THE ELECTRON-POSITRON PAIR*/
+                
+                
         }//end while
         printf("run = %d\n",fc);
     }//End for "Runs"
-    algo_sector_finder.Stop();
 
     
 
-    
-
-    h_delta_theta_vs_phi_electron->Write();
-   h_delta_theta_vs_phi_positron->Write();
-   file->Write();
+   // h_delta_theta_vs_phi_electron->Write();
+   //h_delta_theta_vs_phi_positron->Write();
+   //file->Write();
 
    //gStyle->SetOptStat(0);
    TCanvas *can = new TCanvas("can","canvas",1000,1500);
@@ -914,18 +824,18 @@ int toroot(string nameFile="PASS1_FALL", int version=-19, double Beam_E=10.2, in
     h_delta_theta_vs_p_positron->Draw("colz");
 
 
-    TString outname=nameFile+".png";
+    TString outname=output_file+"_LeptonID.png";
     can->Print(outname);
 
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = finish - start;
     std::cout << "Elapsed time: " << elapsed.count()<<" s\n";
 
+    gApplication->Terminate();
+
     return 0;
 
 }
-
-
 
 
 
