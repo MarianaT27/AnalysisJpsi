@@ -1,9 +1,18 @@
 #ifndef Basic
 #define Basic
 
+bool MM_bool = true;
+Double_t MMcut = 0.1;
+
+bool time_bool = true;
+Double_t timecut = 2.0;
+
+bool Egamma_bool = true;
+Double_t Egammacut = 8.1;
+
 void Get_histos(string name, Double_t score_e_cut = -0.06, Double_t score_p_cut = -0.06)
 {
-  TFile *file = new TFile(("/lustre19/expphy/volatile/clas12/mtenorio/Root/" + name + ".root").c_str(), "READ");
+  TFile *file = new TFile(("/lustre24/expphy/volatile/clas12/mtenorio/Root/Results/" + name + ".root").c_str(), "READ");
   TTree *results = (TTree *)file->Get("results");
   Double_t invariantMass, t, Q2, EP, MM, Egamma, score_e, score_p, score_e_6, score_p_6;
   int helicity;
@@ -15,14 +24,10 @@ void Get_histos(string name, Double_t score_e_cut = -0.06, Double_t score_p_cut 
   results->SetBranchAddress("EPcut", &EP);
   results->SetBranchAddress("MM", &MM);
   results->SetBranchAddress("Egamma", &Egamma);
-  // results->SetBranchAddress("helicity",&helicity);
   results->SetBranchAddress("score_e", &score_e);
   results->SetBranchAddress("score_p", &score_p);
   results->SetBranchAddress("score_e_6", &score_e_6);
   results->SetBranchAddress("score_p_6", &score_p_6);
-
-  bool MM_bool = true;
-  Double_t MMcut = 0.4;
 
   bool Q2_bool = true;
   Double_t Q2cut = 0.5;
@@ -67,6 +72,31 @@ void Get_histos(string name, Double_t score_e_cut = -0.06, Double_t score_p_cut 
 void Reset_histos()
 {
   h_Invariant->Reset("ICES");
+  h_Invariant->Reset("ICES");
+  h_IMee_vs_Mxep->Reset("ICES");
+  h_Invariant->Reset("ICES");
+  h_Mxep->Reset("ICES");
+  h_MXeee->Reset("ICES");
+  h_MXepe1->Reset("ICES");
+  h_MXepe2->Reset("ICES");
+  h_MXee1->Reset("ICES");
+  h_MXee2->Reset("ICES");
+  h_MXpe1->Reset("ICES");
+  h_MXpe2->Reset("ICES");
+
+  h2_Invariant->Reset("ICES");
+  h2_MXep->Reset("ICES");
+  h2_MXeee->Reset("ICES");
+  h2_MXepe1->Reset("ICES");
+  h2_MXepe2->Reset("ICES");
+  h2_MXee1->Reset("ICES");
+  h2_MXee2->Reset("ICES");
+  h2_MXpe1->Reset("ICES");
+  h2_MXpe2->Reset("ICES");
+
+  h_In_M_ep->Reset("ICES");
+  h_In_M_posFDp->Reset("ICES");
+  h_In_M_eleFDp->Reset("ICES");
   h_mm_vs_invariantmass->Reset("ICES");
   h_qq_vs_invariantmass->Reset("ICES");
 
@@ -75,18 +105,33 @@ void Reset_histos()
   h_Q2->Reset("ICES");
   h_E_photon->Reset("ICES");
 
+  h_im_onelep->Reset("ICES");
+
   h_Invariant_noCuts->Reset("ICES");
   h_Invariant_tCut->Reset("ICES");
   h_MX->Reset("ICES");
+  h_W->Reset("ICES");
+  h_W_ep->Reset("ICES");
   h_mm_vs_invariantmass_t->Reset("ICES");
   h_mm_vs_invariantmass_no_t->Reset("ICES");
+  h_dt_vs_invariantmass->Reset("ICES");
+  h_MM_vs_dt->Reset("ICES");
+
+  h_vertex_timediff_FT_FD->Reset("ICES");
+  h_vertex_timediff_FT_eFD->Reset("ICES");
+  h_vertex_timediff_FT_pFD->Reset("ICES");
+  h_vertex_timediff_eFD_pFD->Reset("ICES");
+  h_vertex_timediff_FD_pFD->Reset("ICES");
+
+  for (int i = 0; i < 6; i++)
+    h_Data_Var[i]->Reset("ICES");
 }
 
 void Get_histos_t(string name, Double_t score_e_cut = -0.6, Double_t score_p_cut = -0.6)
 {
-  TFile *file = new TFile(("/lustre19/expphy/volatile/clas12/mtenorio/Root/" + name + ".root").c_str(), "READ");
+  TFile *file = new TFile(("/lustre24/expphy/volatile/clas12/mtenorio/Root/Results/" + name + ".root").c_str(), "READ");
   TTree *results = (TTree *)file->Get("results");
-  Double_t invariantMass, Q2, W, MM, Egamma, score_e, score_p, time_ee;
+  Double_t invariantMass, Q2, W, MM, Egamma, score_e, score_p, time_ee, score_e_6, score_p_6;
 
   results->SetMakeClass(1);
   results->SetBranchAddress("invariantMass", &invariantMass);
@@ -97,12 +142,27 @@ void Get_histos_t(string name, Double_t score_e_cut = -0.6, Double_t score_p_cut
   results->SetBranchAddress("W", &W);
   results->SetBranchAddress("score_e", &score_e);
   results->SetBranchAddress("score_p", &score_p);
+  results->SetBranchAddress("score_e_6", &score_e_6);
+  results->SetBranchAddress("score_p_6", &score_p_6);
 
-  bool MM_bool = true;
-  // Double_t MMcut = 0.4;
+  double_t Mx_min, Mx_max;
+  if (name.find("FTcorrON") != std::string::npos)
+  {
+    // Mx_min=0.9593-(0.0942*3);
+    // Mx_max=0.9593+(0.0942*3);
+    Mx_min = 0.963 - (0.08452 * 3);
+    Mx_max = 0.963 + (0.08452 * 3);
+  }
+  else
+  {
+    // Mx_min=1.015-(0.09222*3);
+    // Mx_max=1.015+(0.09222*3);
+    Mx_min = 0.999 - (0.0756 * 3);
+    Mx_max = 0.999 + (0.0756 * 3);
+  }
 
-  bool time_bool = true;
-  Double_t timecut = 2.0;
+  Mx_min = 0.963 - (0.08452 * 3);
+  Mx_max = 0.963 + (0.08452 * 3);
 
   int count = 0;
 
@@ -115,13 +175,18 @@ void Get_histos_t(string name, Double_t score_e_cut = -0.6, Double_t score_p_cut
     if (score_p < score_p_cut)
       continue;
 
+    if (Egamma_bool && Egamma < Egammacut)
+    {
+      continue;
+    }
+
     h_Q2->Fill(Q2);
 
     if (time_bool && abs(time_ee) > timecut)
     {
       h_mm_vs_invariantmass_no_t->Fill(invariantMass, MM);
       h_Invariant_tCut->Fill(invariantMass);
-      if (MM < 0.7 || MM > 1.3)
+      if (MM < Mx_min || MM > Mx_max)
         h_Invariant_noCuts->Fill(invariantMass);
       continue;
     }
@@ -129,19 +194,257 @@ void Get_histos_t(string name, Double_t score_e_cut = -0.6, Double_t score_p_cut
     h_mm_vs_invariantmass_t->Fill(invariantMass, MM);
 
     h_MX->Fill(MM);
+    Bin_oneVar(invariantMass, MM);
 
-    if (MM_bool && (MM < 0.8 || MM > 1.2))
+    if (MM_bool && (MM < Mx_min || MM > Mx_max))
     {
-      // cout<<"Here"<<endl;
       continue;
     }
 
     h_Invariant->Fill(invariantMass);
-    if (invariantMass > 3.0 && invariantMass < 3.2)
+
+    if (invariantMass >= 3.0 && invariantMass <= 3.2)
+    {
       h_W->Fill(W);
+    }
   }
 }
 
+void Get_histos_exclusive(string name, Double_t score_e_cut = -0.6, Double_t score_p_cut = -0.6)
+{
+  TFile *file = new TFile(("/lustre24/expphy/volatile/clas12/mtenorio/Root/AI_Dec24/" + name + ".root").c_str(), "READ");
+  TTree *results = (TTree *)file->Get("results");
+  Double_t invariantMass, Q2, W, Egamma, score_e, score_p, time_ee, time_epos, time_ep;
+  Double_t time_efdp, time_posfdp;
+  Double_t Mxep, MXepee, MXeee, MXepe1, MXepe2, MXee1, MXee2, MXpe1, MXpe2;
+  Double_t scoreBDT, scoreMLP, scoreBDTG; 
+  results->SetMakeClass(1);
+  results->SetBranchAddress("invariantMass", &invariantMass);
+  results->SetBranchAddress("Q2", &Q2);
+  results->SetBranchAddress("time_ee", &time_ee);
+  results->SetBranchAddress("time_epos", &time_epos);
+  results->SetBranchAddress("time_ep", &time_ep);
+  results->SetBranchAddress("time_efdp", &time_efdp);
+  results->SetBranchAddress("time_posfdp", &time_posfdp);
+  results->SetBranchAddress("Egamma", &Egamma);
+  results->SetBranchAddress("W", &W);
+  results->SetBranchAddress("score_e", &score_e);
+  results->SetBranchAddress("score_p", &score_p);
+  results->SetBranchAddress("scoreBDT", &scoreBDT);
+  results->SetBranchAddress("scoreBDTG", &scoreBDTG);
+
+  results->SetBranchAddress("Mxep", &Mxep);
+  results->SetBranchAddress("MXepee", &MXepee);
+  results->SetBranchAddress("MXeee", &MXeee);
+  results->SetBranchAddress("MXepe1", &MXepe1);
+  results->SetBranchAddress("MXepe2", &MXepe2);
+  results->SetBranchAddress("MXee1", &MXee1);
+  results->SetBranchAddress("MXee2", &MXee2);
+  results->SetBranchAddress("MXpe1", &MXpe1);
+  results->SetBranchAddress("MXpe2", &MXpe2);
+
+  int count = 0;
+
+  for (int fc = 0; fc < results->GetEntries(); fc++)
+  {
+    results->GetEntry(fc);
+
+    if (score_e < score_e_cut|| scoreBDT<-0.2)
+    {
+      continue;
+    }
+    if (score_p < score_p_cut)
+    {
+      continue;
+    }
+
+    h_vertex_timediff_FT_FD->Fill(time_ee);
+    h_vertex_timediff_FT_eFD->Fill(time_epos);
+    h_vertex_timediff_FT_pFD->Fill(time_ep);
+    h_vertex_timediff_eFD_pFD->Fill(time_posfdp);
+    h_vertex_timediff_FD_pFD->Fill(time_efdp);
+
+    if (Egamma_bool && Egamma < Egammacut)
+    {
+      continue;
+    }
+
+    h_Q2->Fill(Q2);
+
+    if (time_bool && (abs(time_ee) > timecut && abs(time_epos) > timecut && abs(time_ep) > timecut))
+    {
+      continue;
+    }
+
+    h_MXepee->Fill(MXepee);
+    h_IMee_vs_Mxep->Fill(invariantMass, Mxep);
+    if (MM_bool && abs(MXepee) > 0.1)
+    {
+      continue;
+    }
+
+    
+    double_t Mx_min, Mx_max;
+    Mx_min = 0.963 - (0.08452 * 3);
+     Mx_max = 0.963 + (0.08452 * 3);
+
+     if (MM_bool && (MXeee < Mx_min || MXeee > Mx_max))
+    {
+      //continue;
+    }
+    
+
+    h_Invariant->Fill(invariantMass);
+    h_Invariant->Fill(invariantMass);
+    h_Mxep->Fill(Mxep);
+    h_MXeee->Fill(MXeee);
+    h_MXepe1->Fill(MXepe1);
+    h_MXepe2->Fill(MXepe2);
+    h_MXee1->Fill(MXee1);
+    h_MXee2->Fill(MXee2);
+    h_MXpe1->Fill(MXpe1);
+    h_MXpe2->Fill(MXpe2);
+
+    h2_Invariant->Fill(invariantMass, Mxep);
+    h2_MXep->Fill(Mxep, Mxep);
+    h2_MXeee->Fill(MXeee, Mxep);
+    h2_MXepe1->Fill(MXepe1, Mxep);
+    h2_MXepe2->Fill(MXepe2, Mxep);
+    h2_MXee1->Fill(MXee1, Mxep);
+    h2_MXee2->Fill(MXee2, Mxep);
+    h2_MXpe1->Fill(MXpe1, Mxep);
+    h2_MXpe2->Fill(MXpe2, Mxep);
+
+    if (invariantMass >= 3.0 && invariantMass <= 3.2)
+    {
+      h_W->Fill(W);
+    }
+    if (Mxep >= 3.0 && Mxep <= 3.2)
+    {
+      h_W_ep->Fill(W);
+    }
+  }
+}
+
+void Get_histos_onelp(string name, int top=3, Double_t score_e_cut = -0.6, Double_t score_p_cut = -0.6, Double_t AIcut=0.04)
+{
+  TFile *file = new TFile(("/lustre24/expphy/volatile/clas12/mtenorio/Root/AI_Dec24/" + name + ".root").c_str(), "READ");
+  cout << "Reading file " << name << ".root" << endl;
+  TTree *results = (TTree *)file->Get("results");
+  bool isEle, isPos;
+  isEle = false;
+  isPos = false;
+
+  Double_t Q2, W, Egamma, score_p, score_e, time_ee, time_ep;
+  Double_t Mxep, MXepe, MXee, MXpe;
+  Double_t scoreBDT, scoreMLP, scoreBDTG;
+
+  results->SetMakeClass(1);
+  results->SetBranchAddress("Q2", &Q2);
+  results->SetBranchAddress("time_ee", &time_ee);
+  results->SetBranchAddress("time_ep", &time_ep);
+  results->SetBranchAddress("Egamma", &Egamma);
+  results->SetBranchAddress("W", &W);
+  results->SetBranchAddress("Mxep", &Mxep);
+  results->SetBranchAddress("MXepe", &MXepe);
+  results->SetBranchAddress("MXee", &MXee);
+  results->SetBranchAddress("MXpe", &MXpe);
+  results->SetBranchAddress("scoreBDT", &scoreBDT);
+  results->SetBranchAddress("scoreBDTG", &scoreBDTG);
+
+  if (top==3){
+    cout<<"Reading e'p'e+"<<endl;
+    isPos = true;
+    results->SetBranchAddress("score_p", &score_p);
+  }
+  else{
+    isEle = true;
+    results->SetBranchAddress("score_e", &score_e);
+  }
+
+  int count = 0;
+
+  for (int fc = 0; fc < results->GetEntries(); fc++)
+  {
+    results->GetEntry(fc);
+
+    if (top==3 && (score_p < score_p_cut||scoreBDT<-0.2 ))
+    {
+      continue;
+    }
+
+    if (top==4  && (score_e < score_e_cut||scoreBDT<AIcut))//0.0481 
+    {
+      continue;
+    }
+
+    h_vertex_timediff_FT_FD->Fill(time_ee);
+    h_vertex_timediff_FT_pFD->Fill(time_ep);
+
+    if (time_bool && (abs(time_ee) > timecut  && abs(time_ep) > timecut))
+    {
+      continue;
+    }
+
+    if (Egamma_bool && Egamma < Egammacut)
+    {
+      continue;
+    }
+
+    h_Q2->Fill(Q2);
+
+    
+
+    if (top==3){
+      h_MXepe1->Fill(MXepe);
+    }
+    else{
+      h_MXepe2->Fill(MXepe);
+    }
+
+    if (MM_bool && abs(MXepe) > MMcut)
+    {
+      continue;
+    }
+
+/*
+    if(MXee<3.45|| MXee>6.47)
+      continue;
+
+    if(MXpe<0.18 || MXpe>1.44)
+      continue;*/
+      
+
+      
+
+    h_Mxep->Fill(Mxep);
+    h2_MXep->Fill(Mxep, Mxep);
+
+    if (top==3)
+    {
+      h2_MXepe1->Fill(MXepe, Mxep);
+      h_MXee1->Fill(MXee);
+      h_MXpe1->Fill(MXpe);
+      h2_MXee1->Fill(MXee, Mxep);
+      h2_MXpe1->Fill(MXpe, Mxep);
+    }
+    else
+    {
+      h2_MXepe2->Fill(MXepe, Mxep);
+      h_MXee2->Fill(MXee);
+      h_MXpe2->Fill(MXpe);
+      h2_MXee2->Fill(MXee, Mxep);
+      h2_MXpe2->Fill(MXpe, Mxep);
+    }
+
+    if (Mxep >= 3.0 && Mxep <= 3.2)
+    {
+      h_W->Fill(W);
+    }
+  }
+}
+
+/*
 void Fit_Egamma_all(string pdfname)
 {
   TCanvas *can = new TCanvas("can", "canvas", 200, 10, 1000, 700);
@@ -286,7 +589,7 @@ void Fit_Egamma_all(string pdfname)
   plotgraph(Events, EventsE, "Number Events polinomial");
 
   can->cd(2);
-  plot2graph(Amplitude, AmplitudeE, "N_{J/#psi}");
+  //plot2graph(Amplitude, AmplitudeE, "N_{J/#psi}");
 
   can->cd(3);
   plot2graph(Mean, MeanE, "Mean", 0, 1, rFit_F[0]->GetParameter(1), rFit_F[0]->GetParError(1), rFit_F[1]->GetParameter(1), rFit_F[1]->GetParError(1));
@@ -302,7 +605,7 @@ void Fit_Egamma_all(string pdfname)
   plotgraph(Events, EventsE, "Number Events exponential");
 
   can->cd(2);
-  plot2graph(Amplitude, AmplitudeE, "N_{J/#psi}", 2, 3);
+  //plot2graph(Amplitude, AmplitudeE, "N_{J/#psi}", 2, 3);
 
   can->cd(3);
   plot2graph(Mean, MeanE, "Mean", 2, 3, rFit_F[2]->GetParameter(1), rFit_F[2]->GetParError(1), rFit_F[3]->GetParameter(1), rFit_F[3]->GetParError(1));
@@ -536,5 +839,6 @@ void Fit_Egamma_t_hel(string pdfname, int fit)
   plot(BSA_Fit, "From Fit ", 1);
   canplus->Print((pdf_original + ")").c_str());
 }
+*/
 
 #endif

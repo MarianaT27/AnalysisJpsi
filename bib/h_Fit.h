@@ -1,7 +1,6 @@
 #ifndef h_Fit
 #define h_Fit
 
-
 class Fit_Function
 {
 public:
@@ -14,7 +13,6 @@ public:
   float range;
 
   Fit_Function() {}
-
 
   void Set_Limits(float in_min_fit, float in_max_fit)
   {
@@ -63,25 +61,64 @@ public:
   float Get_Integral_Signal(TH1 *h)
   {
     double integral = 0.0;
-    integral = (f_signal->Integral(0., 10.)) / (h->GetXaxis()->GetBinWidth(2));
+    //f_signal->SetNpx(10000);
+    integral = (f_signal->Integral(0., 10.,1e-3)) / (h->GetXaxis()->GetBinWidth(2));
     return integral;
   }
 
   TF1 *Fit_Gauss(TH1 *h)
   {
-    f = new TF1(h->GetName(), "[0]*0.398942*(1.0/90)*TMath::Exp(-0.5*((x-[1])/([2]))*((x-[1])/([2])))/TMath::Abs([2])",
-                 min_fit, max_fit);
+    f = new TF1(h->GetName(), "[0]*0.398942*(1.0/100)*TMath::Exp(-0.5*((x-[1])/([2]))*((x-[1])/([2])))/TMath::Abs([2])",
+                min_fit, max_fit);
 
-    int init_amp_fit = (h->GetBinContent(h->FindBin(0.0)) > 0.0) ? h->GetBinContent(h->FindBin(0.0)) : 5;
+    int init_amp_fit = (h->GetBinContent(h->FindBin(0.938)) > 0.0) ? h->GetBinContent(h->FindBin(0.938)) : 5;
 
-    f->SetParameters(init_amp_fit, 0.0, 0.01);
+    f->SetParameters(init_amp_fit, 0.938, 0.05);
     f->SetParLimits(0, init_amp_fit * 0.1, init_amp_fit * 10000);
-    // f->SetParLimits (1,-0.05,0.05);
-    f->SetParLimits(2, 0.00, 0.1);
+    f->SetParLimits (1,0.9,1);
+    //f->SetParLimits(2, 0.00, 0.1);
 
     f->SetParNames("A", "Mean", "Sigma");
 
     h->Fit(f, "ME", "same", min_fit, max_fit);
+
+    return f;
+  }
+
+  TF1 *Fit_GaussMx_Pol2(TH1 *h)
+  {
+    f = new TF1(h->GetName(), "[0]*0.398942*(1.0/90)*TMath::Exp(-0.5*((x-[1])/([2]))*((x-[1])/([2])))/TMath::Abs([2])+ [3]*(x-[1])*(x-[1]) - [4]*(x-[1]) + [5]",
+                min_fit, max_fit);
+
+    int init_amp_fit = (h->GetBinContent(h->FindBin(0.938)) > 0.0) ? h->GetBinContent(h->FindBin(0.938)) : 5;
+
+    f->SetParameters(init_amp_fit, 0.938, 0.05,1,-1,1);
+    f->SetParLimits(0, init_amp_fit * 0.1, init_amp_fit * 10000);
+    //f->SetParLimits (1,0.9,1);
+    //f->SetParLimits(2, 0.00, 0.1);
+    f->SetParLimits(3, 0, 100000);
+    f->SetParLimits(5, 1, 100000);
+
+     f->SetParNames("A", "Mean", "Sigma", "a", "b", "c");
+
+    h->Fit(f, "ME", "same", min_fit, max_fit);
+
+    double par[6];
+    f->GetParameters(par);
+
+    f_BG = new TF1(((TString) "background_fit"), " [1]*(x-[0])*(x-[0]) - [2]*(x-[0]) + [3]", min_fit, max_fit);
+    f_signal = new TF1(((TString) "peak"), "[0]*0.398942*(1.0/90)*TMath::Exp(-0.5*((x-[1])/([2]))*((x-[1])/([2])))/TMath::Abs([2])",
+                       min_fit, max_fit);
+
+    f_BG->SetParameters(par[1], par[3], par[4], par[5]);
+    f_signal->SetParameters(par[0], par[1], par[2]);
+
+    f_BG->SetLineColor(kBlue);
+    f_signal->SetLineColor(kGreen);
+
+    //f_BG->Draw("same");
+    f_signal->Draw("same");
+
 
     return f;
   }
@@ -235,7 +272,7 @@ public:
 
   TF1 *Fit_CrystallBall_Exp(TH1 *h)
   {
-    f = new TF1(((TString) "background_fit") + h->GetName(), "[0]*(1.0/100)*crystalball_function(x, [1], [2], [3], [4]) + TMath::Exp([5]+[6]*x)", min_fit, max_fit);
+    f = new TF1(((TString) "background_fit") + h->GetName(), "[0]*(1.5/100)*crystalball_function(x, [1], [2], [3], [4]) + TMath::Exp([5]+[6]*x)", min_fit, max_fit);
     int init_amp_fit = (h->GetBinContent(h->FindBin(3.096)) > 0.0) ? h->GetBinContent(h->FindBin(3.096)) : 5;
     f->SetParameters(init_amp_fit, 3.096, 0.04, 1.05, 1.1, 7, -2);
     f->SetParLimits(0, init_amp_fit * 0.1, init_amp_fit * 100);
@@ -255,7 +292,7 @@ public:
     double par[7];
     f_BG = new TF1(((TString) "background_fit"), " TMath::Exp([0]+[1]*x)", min_fit, max_fit);
 
-    f_signal = new TF1(h->GetName(), "[0]*(1.0/100)*crystalball_function(x, [1], [2], [3], [4])", min_fit, max_fit);
+    f_signal = new TF1(h->GetName(), "[0]*(1.5/100)*crystalball_function(x, [1], [2], [3], [4])", min_fit, max_fit);
 
     f->GetParameters(par);
     f_BG->SetParameters(par[5], par[6]);
@@ -272,13 +309,13 @@ public:
 
   TF1 *Fit_GaussExp(TH1 *h)
   {
-    f = new TF1(((TString) "background_fit") + h->GetName(), "[0]*gaussexp_function(x, [1], [2], [3]) + TMath::Exp([4]+[5]*x)", min_fit, max_fit);
+    f = new TF1(((TString) "background_fit") + h->GetName(), "[0]*(1.5/100)*gaussexp_function(x, [1], [2], [3]) + TMath::Exp([4]+[5]*x)", min_fit, max_fit);
     int init_amp_fit = (h->GetBinContent(h->FindBin(3.096)) > 0.0) ? h->GetBinContent(h->FindBin(3.096)) : 5;
     f->SetParameters(init_amp_fit, 3.09, 0.04, 0.5, 7, -2);
 
     f->SetParLimits(0, init_amp_fit * 0.1, init_amp_fit * 100);
-    f->SetParLimits(1, 3.01, 3.10);
-    f->SetParLimits(2, 0.025, 0.15);
+    f->SetParLimits(1, 3.01, 3.12);
+    f->SetParLimits(2, 0.025, 0.05);
 
     f->SetParLimits(3, 0.30, 1.5);
 
@@ -292,7 +329,7 @@ public:
     double par[7];
     f_BG = new TF1(((TString) "background_fit"), " TMath::Exp([0]+[1]*x)", min_fit, max_fit);
 
-    f_signal = new TF1(h->GetName(), "[0]*gaussexp_function(x, [1], [2], [3])", min_fit, max_fit);
+    f_signal = new TF1(h->GetName(), "[0]*(1.5/100)*gaussexp_function(x, [1], [2], [3])", min_fit, max_fit);
 
     f->GetParameters(par);
     f_BG->SetParameters(par[4], par[5]);
@@ -328,13 +365,15 @@ public:
 
   TF1 *Fit_dNdMee(TH1 *h)
   {
-    f = new TF1(((TString) "background_fit") + h->GetName(), "[0]*dNdMee(x, [1], [2], [3]) + TMath::Exp([4]+[5]*x)", min_fit, max_fit);
+  
+    f = new TF1(((TString) "background_fit") + h->GetName(), "[0]*(1.5/100)*dNdMee(x, [1], [2], [3]) + TMath::Exp([4]+[5]*x)", min_fit, max_fit);
     int init_amp_fit = (h->GetBinContent(h->FindBin(3.096)) > 0.0) ? h->GetBinContent(h->FindBin(3.096)) : 5;
-    f->SetParameters(init_amp_fit, 3.09, 0.04, 0.3, 7, -2);
+    f->SetParameters(init_amp_fit, 3.09, 0.04, 0.1, 7, -2);
     f->SetParLimits(0, init_amp_fit * 0.1, init_amp_fit * 100);
-    f->SetParLimits(1, 3.01, 3.10);
-    f->SetParLimits(2, 0.025, 0.15);
+    f->SetParLimits(1, 3.080, 3.20);
+    f->SetParLimits(2, 0.009, 0.05);
     f->SetParLimits(3, 0.1, 0.5);
+    //f->SetParLimits(3, 0,1E5);
 
     f->SetParLimits(4, 0.0, 1.0E5);
     f->SetParLimits(5, -1.0E5, 0.0);
@@ -346,7 +385,7 @@ public:
     double par[7];
     f_BG = new TF1(((TString) "background_fit"), " TMath::Exp([0]+[1]*x)", min_fit, max_fit);
 
-    f_signal = new TF1(h->GetName(), "[0]*dNdMee(x, [1], [2], [3])", min_fit, max_fit);
+    f_signal = new TF1(h->GetName(), "[0]*(1.5/100)*dNdMee(x, [1], [2], [3])", min_fit, max_fit);
 
     f->GetParameters(par);
     f_BG->SetParameters(par[4], par[5]);
@@ -357,6 +396,75 @@ public:
 
     f_BG->Draw("same");
     f_signal->Draw("same");
+    cout<<"here1"<<endl;
+    
+    /*gPad->Modified(); gPad->Update();
+    TPaveStats *stats = (TPaveStats*)h->FindObject("stats");  
+    //stats->SetFillColorAlpha(0, 0.2);  // Set a transparent background (alpha = 0.3)  
+    //stats->SetX2NDC(stats->GetX1NDC() + 0.2);  // Reduce the width  
+    //stats->SetY2NDC(stats->GetY1NDC() + 0.2);  // Reduce the height  
+    stats->SetX1NDC(0.1);  // Set the new X1 (left) position  
+    stats->SetY1NDC(0.6);  // Set the new Y1 (bottom) position  
+    stats->SetX2NDC(0.5);  // Set the new X2 (right) position  
+    stats->SetY2NDC(0.9);  // Set the new Y2 (top) position  
+    gPad->Modified();  
+    gPad->Update();  */
+/*
+    TPaveStats *st = (TPaveStats*)h->FindObject("stats");
+
+
+    st->SetName("mystats");
+    h->SetStats(0);
+    TList *list = st->GetListOfLines();
+    TText *tconst = st->GetLineWith("A");
+    list->Remove(tconst);
+    TLatex *myt = new TLatex(0, 0, Form("J/psi = %f",(f_signal->Integral(0.,10.))/(h->GetXaxis()->GetBinWidth(2))));
+    //myt ->SetTextFont(10);
+    myt ->SetTextSize(0.025);
+    //myt ->SetTextColor(kRed);
+    list->Add(myt);
+
+    gPad->Modified();
+    gPad->Update(); */
+
+    return f;
+  }
+
+  TF1 *Fit_dNdMee_1GeV(TH1 *h)
+  {
+  
+    f = new TF1(((TString) "background_fit") + h->GetName(), "[0]*(1.0/100)*dNdMee(x, [1], [2], [3]) + TMath::Exp([4]+[5]*x)", min_fit, max_fit);
+    int init_amp_fit = (h->GetBinContent(h->FindBin(3.096)) > 0.0) ? h->GetBinContent(h->FindBin(3.096)) : 5;
+    f->SetParameters(init_amp_fit, 3.09, 0.04, 0.1, 7, -2);
+    f->SetParLimits(0, init_amp_fit * 0.1, init_amp_fit * 100);
+    //f->SetParLimits(1, 2.9, 3.20);
+    f->SetParLimits(1, 3.08, 3.15);
+    f->SetParLimits(2, 0.01, 0.1);
+    f->SetParLimits(3, 0.1, 0.5);
+    //f->SetParLimits(3, 0,1E5);
+
+    f->SetParLimits(4, 0.0, 1.0E5);
+    f->SetParLimits(5, -1.0E5, 0.0);
+
+    f->SetParNames("A", "mean", "sigma", "br", "x6", "x7");
+
+    h->Fit(f, "MEQ", "same", min_fit, max_fit);
+
+    double par[7];
+    f_BG = new TF1(((TString) "background_fit"), " TMath::Exp([0]+[1]*x)", min_fit, max_fit);
+
+    f_signal = new TF1(h->GetName(), "[0]*(1.0/100)*dNdMee(x, [1], [2], [3])", min_fit, max_fit);
+
+    f->GetParameters(par);
+    f_BG->SetParameters(par[4], par[5]);
+    f_signal->SetParameters(par[0], par[1], par[2], par[3]);
+
+    f_BG->SetLineColor(kBlue);
+    f_signal->SetLineColor(kGreen);
+
+    f_BG->Draw("same");
+    f_signal->Draw("same");
+    cout<<"here1"<<endl;
 
     /*gPad->Modified(); gPad->Update();
 
@@ -379,7 +487,81 @@ public:
 
     return f;
   }
-};
 
+  TF1 *Fit_dNdMee_pol(TH1 *h)
+  {
+  
+    f = new TF1(((TString) "background_fit") + h->GetName(), "[0]*(1.5/100)*dNdMee(x, [1], [2], [3]) + [4]*(x-[1])*(x-[1]) - [5]*(x-[1]) + [6]", min_fit, max_fit);
+    int init_amp_fit = (h->GetBinContent(h->FindBin(3.096)) > 0.0) ? h->GetBinContent(h->FindBin(3.096)) : 5;
+    //f->SetParameters(init_amp_fit, 3.09, 0.01, 0.1,2, 0, 0);
+   
+    f->SetParameters(init_amp_fit, 3.096, 0.05, 0.3, 1, 0, 0);
+     f->SetParLimits(0, init_amp_fit * 0.1, init_amp_fit * 80);
+  //f->SetParLimits(0, init_amp_fit * 0.5, init_amp_fit * 2.0);
+
+    f->SetParLimits(1, 3.09, 3.10);
+    f->SetParLimits(2, 0.045, 0.055);
+    f->SetParLimits(3, 0.1, 0.4);
+    //f->SetParLimits(3, 0,1E5);
+
+    f->SetParLimits(4, 0, 2);    // Limit 'a' to realistic values
+    f->SetParLimits(5, -0.5, 0.5);
+    f->SetParLimits(6,  -0.5, 0.5);    // Limit 'c' for small curvature
+
+    f->SetParNames("A", "mean", "sigma", "br", "a", "b","c");
+
+    h->Fit(f, "MEQR", "same", min_fit, max_fit);
+
+    double par[7];
+    f_BG = new TF1(((TString) "background_fit"), "[1]*(x-[0])*(x-[0]) - [2]*(x-[0]) + [3]", min_fit, max_fit);
+
+    f_signal = new TF1(h->GetName(), "[0]*(1.5/100)*dNdMee(x, [1], [2], [3])", min_fit, max_fit);
+
+    f->GetParameters(par);
+    f_BG->SetParameters(par[1], par[4], par[5], par[6]);
+    f_signal->SetParameters(par[0], par[1], par[2], par[3]);
+
+    f_BG->SetLineColor(kBlue);
+    f_signal->SetLineColor(kGreen);
+
+    f_BG->Draw("same");
+    f_signal->Draw("same");
+
+
+    gPad->Modified(); gPad->Update();
+    TPaveStats *stats = (TPaveStats*)h->FindObject("stats");  
+    //stats->SetFillColorAlpha(0, 0.2);  // Set a transparent background (alpha = 0.3)  
+    //stats->SetX2NDC(stats->GetX1NDC() + 0.2);  // Reduce the width  
+    //stats->SetY2NDC(stats->GetY1NDC() + 0.2);  // Reduce the height  
+    stats->SetX1NDC(0.1);  // Set the new X1 (left) position  
+    stats->SetY1NDC(0.6);  // Set the new Y1 (bottom) position  
+    stats->SetX2NDC(0.5);  // Set the new X2 (right) position  
+    stats->SetY2NDC(0.9);  // Set the new Y2 (top) position  
+    gPad->Modified();  
+    gPad->Update(); 
+
+    /*gPad->Modified(); gPad->Update();
+
+    TPaveStats *st = (TPaveStats*)h->FindObject("stats");
+
+
+    st->SetName("mystats");
+    h->SetStats(0);
+    TList *list = st->GetListOfLines();
+    TText *tconst = st->GetLineWith("A");
+    list->Remove(tconst);
+    TLatex *myt = new TLatex(0, 0, Form("J/psi = %f",(f_signal->Integral(0.,10.))/(h->GetXaxis()->GetBinWidth(2))));
+    //myt ->SetTextFont(10);
+    myt ->SetTextSize(0.025);
+    //myt ->SetTextColor(kRed);
+    list->Add(myt);
+
+    gPad->Modified();
+    gPad->Update(); */
+
+    return f;
+  }
+
+};
 
 #endif

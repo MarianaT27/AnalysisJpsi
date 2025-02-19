@@ -44,31 +44,158 @@ const string fitnames[5] = {"Gauss+Pol", "Crystal_Ball+Pol", "Gauss+Exp", "Cryst
 const string lnames[5] = {"G+Pol", "CB+Pol", "G+Exp", "CB+Exp", "GaussExp+Exp"};
 
 TH1F *h_Invariant = new TH1F("h_im", ";M(e+e-),GeV ", 100, 2.0, 3.5);
+TH1F *h_In_M_ep = new TH1F("h_In_M_ep", ";Missing Mass,GeV ", 100, 2.0, 3.5);
+TH1F *h_In_M_posFDp = new TH1F("h_In_M_posFDp", ";Missing Mass,GeV ", 100, 0, 0);
+TH1F *h_In_M_eleFDp = new TH1F("h_In_M_eleFDp", ";Missing Mass,GeV ", 100, 0, 0);
 TH2F *h_mm_vs_invariantmass = new TH2F("h_mm_vs_invariantmass", "MM vs M(e^+e^-);M(e^+e^-), GeV;Missing Mass, GeV", 150, 1, 3.5, 150, -1, 1);
 TH2F *h_qq_vs_invariantmass = new TH2F("h_qq_vs_invariantmass", "Q^{2} vs M(e^+e^-);M(e^+e^-), GeV; Q^{2}", 150, 1, 3.5, 150, 0, 0.5);
 
-TH1F *h_Mee = new TH1F("h_Mee", ";M(e+e-),GeV ", 90, 2.0, 4);
-TH1F *h_MM = new TH1F("h_MM", ";M_{X},GeV ", 90, -0.5, 0.5);
+TH1F *h_Mee = new TH1F("h_Mee", ";M(e+e-),GeV ", 90, 2.5, 3.5);
+TH1F *h_MM = new TH1F("h_MM", ";M_{X},GeV ", 90, -0.3, 0.3);
 TH1F *h_Q2 = new TH1F("h_Q2", ";Q^{2} ", 150, 0, 1);
 TH1F *h_E_photon = new TH1F("h_E_photon", "Photon Energy", 120, 0, 0);
 
-TH1F *h_Invariant_noCuts = new TH1F("h_im_noCuts", ";M(e+e-),GeV ", 100, 2.5, 3.5);
-TH1F *h_Invariant_tCut = new TH1F("h_im_tCut", ";M(e+e-),GeV ", 100, 2.5, 3.5);
+TH1F *h_im_onelep = new TH1F("h_im_onelep", ";M(e+e-),GeV ", 100, 2.5, 3.5);
+
+TH1F *h_Invariant_noCuts = new TH1F("h_im_noCuts", ";M(e+e-),GeV ", 100, 2.0, 3.5);
+TH1F *h_Invariant_tCut = new TH1F("h_im_tCut", ";M(e+e-),GeV ", 100, 2.0, 3.5);
 TH1F *h_MX = new TH1F("h_MX", ";M_{X},GeV ", 90, 0.5, 1.5);
 TH1F *h_W = new TH1F("h_W", ";W,GeV ", 90, 4, 4.6);
-TH2F* h_mm_vs_invariantmass_t= new TH2F("h_mm_vs_invariantmass_t","M_{X} vs M(e^+e^-) for t<=2.5ns;M(e^+e^-), GeV;Missing Mass, GeV",150,0,4,150,0,3);
-TH2F* h_mm_vs_invariantmass_no_t= new TH2F("h_mm_vs_invariantmass_no_t","M_{X} vs M(e^+e^-) for t>2.5ns;M(e^+e^-), GeV;Missing Mass, GeV",150,0,4,150,0,3);
+TH1F *h_W_ep = new TH1F("h_W_ep", ";W,GeV ", 90, 4, 4.6);
+TH2F *h_mm_vs_invariantmass_t = new TH2F("h_mm_vs_invariantmass_t", "M_{X} vs M(e^+e^-) for t<=2.5ns;M(e^+e^-), GeV;Missing Mass, GeV", 150, 0, 4, 150, -3, 3);
+TH2F *h_mm_vs_invariantmass_no_t = new TH2F("h_mm_vs_invariantmass_no_t", "M_{X} vs M(e^+e^-) for t>2.5ns;M(e^+e^-), GeV;Missing Mass, GeV", 150, 0, 4, 150, -3, 3);
+TH2F *h_dt_vs_invariantmass = new TH2F("h_dt_vs_invariantmass", "#Delta t vs M(e^+e^-) ;M(e^+e^-), GeV; #Delta t", 150, 2.0, 3.5, 150, -1, 25);
+TH2F *h_MM_vs_dt = new TH2F("h_MM_vs_dt", "M(e^+e^-) vs #Delta t; #Delta t;M(e^+e^-), GeV", 150, -1, 25, 150, -3, 3);
 
+// 2D M(e+e-) vs MX(e'p')
+TH2F *h_IMee_vs_Mxep = new TH2F("h_IMee_vs_Mxep", "M(e^{+}e^{-}) vs M_{X}(e'p');M(e^{+}e^{-}), GeV;M_{X}(e'p'), GeV", 150, 2, 3.5, 150, 2, 3.5);
+// Invariant Mass
+// TH1F* h_IMee= new TH1F("h_IMee",";M(e^{+}e^{-}),GeV ",100,0,4);
+// Missing Mass plots
+TH1F *h_Mxep = new TH1F("h_Mxep", "M_{X}(e'p'); M_{x}, GeV; Counts ", 100, 2.0, 3.5);
+TH1F *h_MXepee = new TH1F("h_MXepee", "M_{X}(e'p'e^{+}e^{-}); M_{x}, GeV; Counts ", 100, -1, 1);
+TH1F *h_MXeee = new TH1F("h_MXeee", "M_{X}(e'e^{+}e^{-}); M_{x}, GeV; Counts ", 100, 0, 2);
+TH1F *h_MXepe1 = new TH1F("h_MXepe1", "M_{X}(e'p'e^{+}); M_{x}, GeV; Counts ", 100, -1, 1);
+TH1F *h_MXepe2 = new TH1F("h_MXepe2", "M_{X}(e'p'e^{-}); M_{x}, GeV; Counts ", 100, -1, 1);
+TH1F *h_MXee1 = new TH1F("h_MXee1", "M_{X}(e'e^{+}); M_{x}, GeV; Counts ", 100, 0, 0);
+TH1F *h_MXee2 = new TH1F("h_MXee2", "M_{X}(e'e^{-}); M_{x}, GeV; Counts ", 100, 0, 0);
+TH1F *h_MXpe1 = new TH1F("h_MXpe1", "M_{X}(p'e^{+}); M_{x}, GeV; Counts ", 100, 0, 0);
+TH1F *h_MXpe2 = new TH1F("h_MXpe2", "M_{X}(p'e^{-}); M_{x}, GeV; Counts ", 100, 0, 0);
+
+TH2F *h2_Invariant = new TH2F("h2_Invariant", ";M(e+e-),GeV ", 100, 2.5, 3.5, 100, 2.5, 3.5);
+TH2F *h2_MXep = new TH2F("h2_MXep", "M_{X}(e'p'); M_{x}, GeV;  ", 100, 2.5, 3.5, 100, 2.5, 3.5);
+TH2F *h2_MXeee = new TH2F("h2_MXeee", "M_{X}(e'e^{+}e^{-}); M_{x}, GeV;  ", 100, 0, 2, 100, 2.5, 3.5);
+TH2F *h2_MXepe1 = new TH2F("h2_MXepe1", "M_{X}(e'p'e^{+}); M_{x}, GeV;  ", 100, -1, 1, 100, 2.5, 3.5);
+TH2F *h2_MXepe2 = new TH2F("h2_MXepe2", "M_{X}(e'p'e^{-}); M_{x}, GeV;  ", 100, -1, 1, 100, 2.5, 3.5);
+TH2F *h2_MXee1 = new TH2F("h2_MXee1", "M_{X}(e'e^{+}); M_{x}, GeV;  ", 100, 0, 0, 100, 2.5, 3.5);
+TH2F *h2_MXee2 = new TH2F("h2_MXee2", "M_{X}(e'e^{-}); M_{x}, GeV;  ", 100, 0, 0, 100, 2.5, 3.5);
+TH2F *h2_MXpe1 = new TH2F("h2_MXpe1", "M_{X}(p'e^{+}); M_{x}, GeV;  ", 100, 0, 0, 100, 2.5, 3.5);
+TH2F *h2_MXpe2 = new TH2F("h2_MXpe2", "M_{X}(p'e^{-}); M_{x}, GeV;  ", 100, 0, 0, 100, 2.5, 3.5);
+
+
+TH1F *h_vertex_timediff_FT_FD = new TH1F("h_vertex_timediff_FT_FD", "Vertex time difference between FT_e^- and FD_e; #Delta t_v=FD_e - FT_e^-, ns;", 350, -25, 25);
+TH1F *h_vertex_timediff_FT_eFD = new TH1F("h_vertex_timediff_FT_eFD", "Vertex time difference between FT_e^- and FD_e^+; #Delta t_v=FD_e^+ - FT_e^-, ns;", 350, -25, 25);
+TH1F *h_vertex_timediff_FT_pFD = new TH1F("h_vertex_timediff_FT_pFD", "Vertex time difference between FT_e^- and FD_p; #Delta t_v=FD_p - FT_e^-, ns;", 350, -25, 25);
+TH1F *h_vertex_timediff_eFD_pFD = new TH1F("h_vertex_timediff_eFD_pFD", "Vertex time difference between FD_e^+ and FD_p; #Delta t_v=FD_e^+ - p, ns;", 350, -25, 25);
+TH1F *h_vertex_timediff_FD_pFD = new TH1F("h_vertex_timediff_FD_pFD", "Vertex time difference between FD_e^- and FD_p; #Delta t_v=FD_e^- - p, ns;", 350, -25, 25);
 
 TH1F *h_invariant_Egamma[4];
 TH1F *h_invariant_Egamma_t[4];
 
+TH1F *h_Data_Var[6];
+
 TH1F *h_invariant_Egamma_t_plus[6];
 TH1F *h_invariant_Egamma_t_minus[6];
+
+double mean_NoFT[6], mean_FT[6], mean_NoFT_Error[6], mean_FT_Error[6];
+double sigma_NoFT[6], sigma_FT[6], sigma_NoFT_Error[6], sigma_FT_Error[6];
 
 double GetBSA(double Njpsi_p, double Njpsi_n)
 {
   return (Njpsi_p - Njpsi_n) / (Njpsi_p + Njpsi_n);
+}
+
+void LocateFiles(int version, string train = "jpsitcs")
+{
+  char filename1[500];
+  string path;
+  int max;
+  int missing_files = 0;
+  int found_files = 0;
+  if (version == -18)
+    max = 170;
+  if (version == +18)
+    max = 180;
+  if (version == -19)
+    max = 120;
+
+  int found[180] = {0};
+
+  if (version == -18)
+  {
+    for (int i = 0; i < max; i++)
+    {
+      sprintf(filename1, "/cache/clas12/rg-a/production/recon/fall2018/torus-1/pass2/main/train/%s/%s_00%d.hipo", train.c_str(), train.c_str(), F18in_P2[i]);
+      path = filename1;
+      if (!std::filesystem::exists(path))
+      {
+        cout << "File " << F18in_P2[i] << " does not exist." << std::endl;
+        missing_files++;
+      }
+      else
+      {
+        found[found_files] = F18in_P2[i];
+        found_files++;
+      }
+    }
+  }
+  else if (version == +18)
+  {
+    for (int i = 0; i < max; i++)
+    {
+      sprintf(filename1, "/cache/clas12/rg-a/production/recon/fall2018/torus+1/pass2/train/%s/%s_00%d.hipo", train.c_str(), train.c_str(), F18out_P2[i]);
+      path = filename1;
+      if (!std::filesystem::exists(path))
+      {
+        cout << "File " << F18out_P2[i] << " does not exist." << std::endl;
+        missing_files++;
+      }
+      else
+      {
+        found[found_files] = F18out_P2[i];
+        found_files++;
+      }
+    }
+  }
+  else if (version == -19)
+  {
+    for (int i = 0; i < max; i++)
+    {
+      sprintf(filename1, "/cache/clas12/rg-a/production/recon/spring2019/torus-1/pass2/dst/train/%s/%s_00%d.hipo", train.c_str(), train.c_str(), S19_P2[i]);
+      path = filename1;
+      if (!std::filesystem::exists(path))
+      {
+        cout << "File " << path << " does not exist." << std::endl;
+        missing_files++;
+      }
+      else
+      {
+        found_files++;
+      }
+    }
+  }
+
+  cout << "Total missing files for version " << version << " : " << missing_files << endl;
+  cout << "Total found files for version " << version << " : " << found_files << endl;
+  cout << "Found files are: " << endl;
+  cout << "[" << found_files << "]={";
+  for (int ff = 0; ff < found_files; ff++)
+  {
+    cout << found[ff];
+    if ((ff + 1) != found_files)
+      cout << ",";
+  }
+  cout << "}" << endl;
 }
 
 void Bin_Egamma(double_t Epho, double_t invariantMass)
@@ -84,17 +211,21 @@ void Bin_Egamma(double_t Epho, double_t invariantMass)
     h_invariant_Egamma[3]->Fill(invariantMass);
 }
 
-void Bin_oneVar(double_t Var, double_t Data)
+void Bin_oneVar(Double_t Var, Double_t Data)
 {
-
-  if (Var >= 8.2 && Var < 9.05)
-    h_invariant_Egamma[0]->Fill(Data);
-  else if (Var < 9.46)
-    h_invariant_Egamma[1]->Fill(Data);
-  else if (Var < 10)
-    h_invariant_Egamma[2]->Fill(Data);
-  else if (Var < 10.6)
-    h_invariant_Egamma[3]->Fill(Data);
+  double array_Var[6] = {1.0, 1.2, 1.4, 1.6, 1.8, 3.5};
+  if (Var < array_Var[0])
+    h_Data_Var[0]->Fill(Data);
+  else if (Var < array_Var[1])
+    h_Data_Var[1]->Fill(Data);
+  else if (Var < array_Var[2])
+    h_Data_Var[2]->Fill(Data);
+  else if (Var < array_Var[3])
+    h_Data_Var[3]->Fill(Data);
+  else if (Var < array_Var[4])
+    h_Data_Var[4]->Fill(Data);
+  else if (Var < array_Var[5])
+    h_Data_Var[5]->Fill(Data);
 }
 
 void Bin_Egamma_t(double_t Epho, double_t t, int hel, double_t invariantMass)

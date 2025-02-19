@@ -1,6 +1,7 @@
 {
     "files.associations": {
-        "FitResults.C": "cpp"
+        "FitResults.C": "cpp",
+        "taggedfromroot.C": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

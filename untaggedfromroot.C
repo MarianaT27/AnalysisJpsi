@@ -128,7 +128,7 @@ int untaggedfromroot(string nameFile="PASS1_FALL", int version=-19, double Beam_
     //Electron variables
   Double_t electron_p, electron_theta, electron_phi, electron_px, electron_py, electron_pz;
   Double_t electron_vx, electron_vy, electron_vz, electron_vt;
-  Double_t electron_pcal_v, electron_pcal_w;
+  Double_t electron_pcal_v, electron_pcal_w,electron_pcal_u;
   Double_t electron_pcal_energy, electron_ecin_energy, electron_ecout_energy; //Electron Energies
   Double_t electron_energy;
   Double_t electron_m2pcal, electron_m2ecin, electron_m2ecout;
@@ -138,7 +138,7 @@ int untaggedfromroot(string nameFile="PASS1_FALL", int version=-19, double Beam_
   //Positron variables
   Double_t positron_p, positron_theta, positron_phi, positron_px, positron_py, positron_pz;
   Double_t positron_vx, positron_vy, positron_vz, positron_vt;
-  Double_t positron_pcal_v, positron_pcal_w;
+  Double_t positron_pcal_v, positron_pcal_w, positron_pcal_u;
     Double_t positron_pcal_energy, positron_ecin_energy, positron_ecout_energy; //Positron Energies
     Double_t positron_energy;
     Double_t positron_chi2pid;
@@ -236,6 +236,7 @@ int untaggedfromroot(string nameFile="PASS1_FALL", int version=-19, double Beam_
     tree->SetBranchAddress("electron_vt",&electron_vt);
     tree->SetBranchAddress("electron_pcal_v",&electron_pcal_v);
     tree->SetBranchAddress("electron_pcal_w",&electron_pcal_w);
+    tree->SetBranchAddress("electron_pcal_u",&electron_pcal_u);
     tree->SetBranchAddress("electron_pcal_energy",&electron_pcal_energy);
     tree->SetBranchAddress("electron_ecin_energy",&electron_ecin_energy);
     tree->SetBranchAddress("electron_ecout_energy",&electron_ecout_energy);
@@ -263,6 +264,7 @@ int untaggedfromroot(string nameFile="PASS1_FALL", int version=-19, double Beam_
     tree->SetBranchAddress("positron_vt",&positron_vt);
     tree->SetBranchAddress("positron_pcal_v",&positron_pcal_v);
     tree->SetBranchAddress("positron_pcal_w",&positron_pcal_w);
+    tree->SetBranchAddress("positron_pcal_u",&positron_pcal_u);
     tree->SetBranchAddress("positron_pcal_energy",&positron_pcal_energy);
     tree->SetBranchAddress("positron_ecin_energy",&positron_ecin_energy);
     tree->SetBranchAddress("positron_ecout_energy",&positron_ecout_energy);
